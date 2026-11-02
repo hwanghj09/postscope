@@ -22,6 +22,7 @@ from .services.collector import Collector
 from .services.analysis import date_bounds,run_analysis
 from .services.reports import create_report
 from .demo import create_demo
+from . import __version__
 
 ROOT=Path(__file__).resolve().parent
 MAX_FILE=100*1024*1024
@@ -153,7 +154,7 @@ def create_app(data_dir=None):
         if tasks:
             await asyncio.gather(*tasks,return_exceptions=True)
 
-    app=FastAPI(title="PostScope",version="1.0.0",lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url=None)
+    app=FastAPI(title="PostScope",version=__version__,lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url=None)
     app.state.store,app.state.adapter,app.state.collector=store,adapter,collector
     app.state.csrf_token=token
     app.add_middleware(TrustedHostMiddleware,allowed_hosts=["localhost","127.0.0.1","[::1]"])
@@ -223,7 +224,7 @@ def create_app(data_dir=None):
 
     @app.get("/api/health")
     def health():
-        return {"status":"ok","version":"1.0.0"}
+        return {"status":"ok","version":__version__}
 
     @app.get("/api/workspaces")
     def workspaces():

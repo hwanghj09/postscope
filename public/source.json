@@ -2,5 +2,5 @@
   "mode": "telegram",
   "chat": "https://t.me/yubin_MPGA",
   "label": "유빈 아카이브",
-  "lookback_days": 90
+  "start_date": "2025-08-01"
 }

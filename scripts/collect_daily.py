@@ -1,6 +1,6 @@
 """One scheduled metadata-only Telegram read. Replace public data only after success."""
 import asyncio
-from datetime import datetime,timedelta,timezone
+from datetime import date,datetime,timedelta,timezone
 import json
 import os
 from pathlib import Path
@@ -16,6 +16,24 @@ ROOT=Path(__file__).resolve().parents[1]
 OUTPUT=ROOT/'public'/'dataset.json'
 
 
+def collection_start(config,end):
+    zone=ZoneInfo('Asia/Seoul')
+    fixed=os.environ.get('POSTSCOPE_START_DATE') or config.get('start_date')
+    if fixed:
+        try:
+            day=date.fromisoformat(fixed)
+            if day.isoformat()!=fixed:raise ValueError
+        except (ValueError,TypeError):
+            raise ValueError('수집 시작일은 YYYY-MM-DD 형식이어야 합니다.') from None
+    else:
+        days=int(os.environ.get('POSTSCOPE_LOOKBACK_DAYS',config.get('lookback_days',90)))
+        if not 1<=days<=3650:raise ValueError('조회 기간은 1~3650일입니다.')
+        day=end.astimezone(zone).date()-timedelta(days=days-1)
+    start=datetime.combine(day,datetime.min.time(),zone).astimezone(timezone.utc)
+    if start>=end:raise ValueError('수집 시작일은 현재 시각보다 이전이어야 합니다.')
+    return start
+
+
 async def collect():
     config_path=ROOT/'public'/'source.json'
     config=json.loads(config_path.read_text()) if config_path.exists() else {}
@@ -25,10 +43,8 @@ async def collect():
     if not target:raise ValueError('수집할 채널을 public/source.json 또는 TELEGRAM_CHAT에 설정하세요.')
     missing=[key for key in ['TELEGRAM_API_ID','TELEGRAM_API_HASH','TELEGRAM_SESSION'] if not os.environ.get(key)]
     if missing:raise ValueError('GitHub Secrets 설정 필요: '+', '.join(missing))
-    days=int(os.environ.get('POSTSCOPE_LOOKBACK_DAYS',config.get('lookback_days',90)))
-    if not 1<=days<=365:raise ValueError('조회 기간은 1~365일입니다.')
-    end=datetime.now(timezone.utc);zone=ZoneInfo('Asia/Seoul')
-    start=datetime.combine(end.astimezone(zone).date()-timedelta(days=days-1),datetime.min.time(),zone).astimezone(timezone.utc)
+    end=datetime.now(timezone.utc)
+    start=collection_start(config,end)
     client=TelegramClient(StringSession(os.environ['TELEGRAM_SESSION']),int(os.environ['TELEGRAM_API_ID']),os.environ['TELEGRAM_API_HASH'],flood_sleep_threshold=0,request_retries=0,connection_retries=1,timeout=30)
     messages=[];cursor=0;retries=0
     try:

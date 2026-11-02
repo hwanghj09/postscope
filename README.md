@@ -19,7 +19,7 @@ uv sync --frozen
 uv run python scripts/configure_daily.py --repo hwanghj09/postscope --chat yubin_MPGA
 ```
 
-이후 Actions의 **Deploy website → Run workflow → collect 체크**로 첫 수집을 실행합니다. Secrets는 `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION`, `TELEGRAM_CHAT`입니다. 기본은 전체 작성자·최근 90일이며, 게시 본문·파일·원본 계정 ID·세션을 공개 데이터에 넣지 않습니다.
+이후 Actions의 **Deploy website → Run workflow → collect 체크**로 수집을 실행합니다. Secrets는 `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION`, `TELEGRAM_CHAT`입니다. 현재는 전체 작성자·**2025-08-01(한국 시간)부터 현재까지**를 조회합니다. `public/source.json`의 `start_date`로 시작일을 바꿀 수 있으며 날짜가 지나도 과거 기록을 최근 90일로 잘라내지 않습니다. 게시 본문·파일·원본 계정 ID·세션을 공개 데이터에 넣지 않습니다.
 
 ## 실행
 

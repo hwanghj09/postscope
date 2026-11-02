@@ -1,5 +1,8 @@
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
+const siteMode=$('meta[name="postscope-mode"]')?.content==='static';
+const webMode=siteMode||$('meta[name="postscope-mode"]')?.content==='browser';
+let browserClient;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nf=new Intl.NumberFormat('ko-KR');
 const fmt=value=>value==null?'계산 불가':nf.format(Math.round(value*10)/10);
@@ -8,6 +11,7 @@ const types={text:'텍스트',document:'문서',photo:'사진',video:'영상',au
 const state={workspace:null,workspaces:[],analysis:null,applied:null,page:'dashboard',heat:'count',heatTable:false,cursor:0,history:[],upload:null,connection:null,authStage:'code',chatOffset:0,loading:0,poller:null,workspaceRequest:0,analysisRequest:0,recordsRequest:0,previewRequest:0,applying:false,previewing:false,importBusy:false};
 
 async function api(path,options={}){
+  if(webMode){browserClient??=import(siteMode?'./static-api.js':'./browser-api.js');return (await browserClient).request(path,options)}
   const headers={'X-PostScope-Token':$('meta[name="postscope-token"]').content,...options.headers};
   if(options.body&&!(options.body instanceof FormData)){headers['Content-Type']='application/json';options.body=JSON.stringify(options.body)}
   const response=await fetch(path,{...options,headers,credentials:'same-origin'});
@@ -61,9 +65,9 @@ function fillSenders(){
 }
 function periodRange(period){
   const chat=state.workspace?.chats.find(x=>x.chat_key===$('#chat-select').value);
-  if(!chat?.first_message||!chat?.last_message)return null;
+  if(!chat||(!chat.first_message&&!chat.period_start)||(!chat.last_message&&!chat.period_end))return null;
   const zone=$('#timezone-select').value||state.workspace.timezone;
-  const first=localDate(chat.first_message,zone),end=localDate(chat.last_message,zone);
+  const first=chat.period_start||localDate(chat.first_message,zone),end=chat.period_end||localDate(chat.last_message,zone);
   const start=period==='all'?first:new Date(new Date(end+'T12:00:00Z').getTime()-(Number(period)-1)*86400000).toISOString().slice(0,10);
   return {start:start<first?first:start,end};
 }
@@ -177,6 +181,7 @@ function setMenu(open){
 }
 
 function navigate(page){
+  if(siteMode&&page==='settings')page='quality';
   state.page=names[page]?page:'dashboard';
   const hasChat=!!state.workspace?.chats.length;
   $$('.page-panel').forEach(panel=>panel.hidden=panel.id!=='page-'+state.page||(!hasChat&&['dashboard','records','comparison','reports'].includes(state.page)));
@@ -265,6 +270,10 @@ function switchImportTab(tab){
   $$('[data-import-tab]').forEach(button=>{const selected=button.dataset.importTab===tab;button.classList.toggle('selected',selected);button.setAttribute('aria-selected',String(selected))});
   $('#json-import-panel').hidden=tab!=='json';$('#api-import-panel').hidden=tab!=='api';
   clearFeedback($('#import-dialog'));
+  if(webMode&&tab==='api'){
+    $('#api-import-panel').innerHTML='<div class="notice">계정 연결·수집은 로컬 앱에서 사용할 수 있습니다.</div><a class="button primary full-width" href="https://github.com/hwanghj09/postscope/releases/latest" target="_blank" rel="noopener noreferrer">로컬 앱 다운로드 ↗</a>';
+    return;
+  }
   if(tab==='api'){
     const now=new Date();if(!$('#api-end').value)$('#api-end').value=localDate(now.toISOString());if(!$('#api-start').value)$('#api-start').value=localDate(new Date(now-7*86400000).toISOString());
   }
@@ -399,4 +408,12 @@ $('#connect-settings').onclick=()=>openImport('api');
 $('#connection-status').onclick=event=>{const button=event.target.closest('[data-disconnect]');if(button)action(button,async()=>{const result=await api('/api/connections/'+button.dataset.disconnect,{method:'DELETE'});if(state.connection===button.dataset.disconnect){state.connection=null;$('#login-form').hidden=false;$('#api-collection').hidden=true;$('#verify-form').hidden=true;invalidateSample()}await loadSettings();toast(result.remote_revoked?'연결 해제됨':'로컬 연결 해제 · 원격 해제 미확인','success')})};
 $('#delete-workspace').onclick=()=>{$('#delete-confirm').value='';clearFeedback($('#delete-dialog'));$('#delete-dialog').showModal()};
 $('#delete-form').onsubmit=event=>{event.preventDefault();action($('#delete-form button'),async()=>{await api('/api/workspaces/'+state.workspace.id+'?confirm='+encodeURIComponent($('#delete-confirm').value),{method:'DELETE'});$('#delete-dialog').close();state.analysis=null;localStorage.removeItem('postscope-workspace');await loadWorkspaces();toast('삭제됨','success')})};
+if(siteMode){
+  $$('[data-import],#new-workspace,[data-page="settings"],#start-own').forEach(node=>node.hidden=true);
+  $('#workspace-select').disabled=true;
+  $('.heading-actions').insertAdjacentHTML('afterbegin','<button class="button" id="refresh-data">새로고침</button>');
+  $('#refresh-data').onclick=()=>location.reload();
+  $('#demo-banner>span').innerHTML='<span class="demo-label">DEMO</span>수집 설정 전 샘플 데이터';
+  $('#include-ids').closest('details').hidden=true;
+}
 loading(true);loadWorkspaces().then(()=>navigate(location.hash.slice(1)||'dashboard')).catch(error=>toast(error.message,'error')).finally(()=>loading(false));

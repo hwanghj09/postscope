@@ -1,0 +1,9 @@
+{
+  "name": "postscope-web",
+  "private": true,
+  "version": "1.0.1",
+  "description": "Pinned browser Python runtime for the GitHub Pages build",
+  "devDependencies": {
+    "pyodide": "0.28.3"
+  }
+}

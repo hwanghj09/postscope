@@ -8,8 +8,8 @@ import tomllib
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
-ROOT_FILES={'.gitignore','README.md','pyproject.toml','requirements.txt','uv.lock','start.sh','start.bat'}
-SOURCE_DIRS={'.github','docs','postscope','scripts','tests'}
+ROOT_FILES={'.gitignore','README.md','pyproject.toml','requirements.txt','uv.lock','start.sh','start.bat','package.json','package-lock.json'}
+SOURCE_DIRS={'.github','docs','postscope','public','scripts','tests'}
 EXCLUDED={'.git','.venv','__pycache__','.pytest_cache','data','dist','test-results'}
 FORBIDDEN_SUFFIXES={'.pyc','.log','.sqlite','.sqlite3','.db','.session','.pem','.key'}
 

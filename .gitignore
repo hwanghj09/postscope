@@ -14,3 +14,5 @@ dist/
 *.db
 *.pem
 *.key
+node_modules/
+web-dist/

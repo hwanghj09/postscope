@@ -1,6 +1,23 @@
 # PostScope
 
-텔레그램 JSON 내보내기 또는 사용자 API에서 확보한 **게시 메타데이터**를 분석하는 한국어 로컬 웹 앱입니다. 메시지 본문·첨부파일을 저장하지 않으며, 외부 AI나 CDN을 호출하지 않습니다. 공식 Telegram 제품이 아닙니다.
+Actions가 매일 갱신한 게시 데이터를 보여주는 **정적 웹 대시보드**입니다. JSON 가져오기·Telegram 계정 수집을 위한 로컬 앱도 제공합니다. 메시지 본문·첨부파일을 저장하지 않으며, 외부 AI나 CDN을 호출하지 않습니다. 공식 Telegram 제품이 아닙니다.
+
+## 웹사이트
+
+**https://hwanghj09.github.io/postscope/**
+
+웹은 정적 파일로 제공됩니다. Actions가 매일 **09:05 (Asia/Seoul)** 한 번 데이터를 갱신하고 웹을 배포합니다. 웹에서는 저장된 스냅샷을 표시하며, 로그인·실시간 수집·업로드 서버가 없습니다. 최초 화면은 JSON 집계 파일만 읽고, 추가 필터·내보내기는 브라우저에서 기존 Python 분석 엔진을 실행합니다.
+
+현재 소스는 이전에 사용한 **합성 데모**입니다. 실제 텔레그램 수집으로 표시하지 않습니다. `public/source.json`에 소스 설정을, `public/dataset.json`에 마지막 정상 데이터를 보관합니다. 수집 실패 시 파일을 교체하거나 사이트를 배포하지 않아 마지막 성공 데이터를 유지합니다. GitHub의 예약 실행은 서버 부하에 따라 지연될 수 있습니다.
+
+실제 채널을 연결하려면 본인의 PC에서 GitHub CLI에 로그인한 뒤 다음을 실행하세요. 앱 ID·해시·세션·대상 방을 GitHub Secrets로 직접 저장하며 인증값은 화면이나 Git에 출력하지 않습니다.
+
+```bash
+uv sync --frozen
+uv run python scripts/configure_daily.py --repo hwanghj09/postscope
+```
+
+이후 Actions의 **Deploy website → Run workflow → collect 체크**로 첫 수집을 실행합니다. Secrets는 `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION`, `TELEGRAM_CHAT`입니다. 기본은 전체 작성자·최근 90일이며, 게시 본문·파일·원본 계정 ID·세션을 공개 데이터에 넣지 않습니다.
 
 ## 실행
 
@@ -78,6 +95,8 @@ uv run python tests/benchmark.py 100000
 구현 범위와 인수검사 한계는 `docs/VALIDATION.md`, 데스크톱·360px 화면은 `docs/dashboard-desktop.png`, `docs/dashboard-mobile.png`에서 확인할 수 있습니다.
 
 ## GitHub Actions와 릴리스
+
+[Deploy website](.github/workflows/pages.yml)가 정적 웹사이트의 일일 데이터 갱신·브라우저 검증·GitHub Pages 배포를 처리합니다. `main` 푸시는 기존 데이터를 배포하고, 예약 실행과 `collect=true` 수동 실행만 데이터를 수집합니다.
 
 [CI and Release](.github/workflows/ci.yml)는 다음을 자동화합니다.
 

@@ -2,5 +2,6 @@
   "mode": "telegram",
   "chat": "https://t.me/yubin_MPGA",
   "label": "유빈 아카이브",
-  "start_date": "2025-08-01"
+  "start_date": "2025-08-01",
+  "analysis_start_date": "2025-08-13"
 }

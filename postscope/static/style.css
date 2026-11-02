@@ -71,3 +71,67 @@ main{padding-top:26px;padding-bottom:36px}.page-heading{margin-bottom:20px}.page
   .result-empty{padding:22px 16px;flex-direction:column;align-items:flex-start}.result-empty h3{font-size:14px}.padded{padding:18px}.detail-item{font-size:11px}.export-card{min-height:160px;padding:20px}.report-summary{font-size:11px}.comparison-form{gap:10px}.comparison-form .button{min-height:40px}.comparison-metrics span{font-size:10px}.pagination .button{font-size:11px;min-height:40px}
   dialog{padding:20px;max-width:calc(100vw - 24px)}.dialog-heading h2{font-size:18px}.dialog-tabs button{font-size:12px;min-height:42px}.dialog-heading .icon-button{min-width:40px;min-height:40px}.dropzone b{font-size:12px}.dropzone>span:last-of-type{font-size:10px}.dropzone input{font-size:11px}.inline-feedback{font-size:11px}.import-check{font-size:11px}.context-help>summary{min-height:36px;display:flex;align-items:center}.full-width{min-height:42px}
 }
+
+/* Keep routine browsing compact; reveal controls only on request. */
+.filter-card{padding:0 18px;margin-bottom:22px}
+.advanced-filters{border:0}
+.advanced-filters>summary{min-height:56px;padding:10px 0;align-items:center;gap:16px;font-size:13px;color:#52647f}
+.advanced-filters>summary:after{display:none}
+.advanced-filters>summary::-webkit-details-marker{display:none}
+.filter-overview{display:flex;align-items:center;gap:12px;min-width:0}
+#filter-summary{font-weight:500;overflow-wrap:anywhere}
+.filter-toggle{display:flex;align-items:center;gap:10px;flex-shrink:0;color:#536fc0;font-size:12px}
+.filter-toggle:after{content:'';width:6px;height:6px;border-right:1.5px solid;border-bottom:1.5px solid;transform:rotate(45deg);margin:0 3px 4px 0}
+.advanced-filters[open] .filter-toggle:after{transform:rotate(225deg);margin-bottom:-3px}
+.advanced-filters>summary:focus-visible{outline:2px solid #5f80e5;outline-offset:3px;border-radius:5px}
+.filter-settings{border-top:1px solid #e8edf5;padding:4px 0 16px}
+.filter-settings .filter-grid{grid-template-columns:1fr 1fr 2fr 1fr;gap:16px}
+.filter-settings .filter-grid>.field{grid-column:auto;grid-row:auto;min-width:0}
+.filter-settings .filter-bottom{padding:18px 0;gap:14px 22px}
+.filter-actions{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.filter-actions .button{min-width:88px}
+.filter-tools{padding:10px 0 18px}
+.period-presets{flex-wrap:wrap}
+.period-presets button{min-height:34px;font-size:12px}
+.static-site .filter-settings .filter-grid{grid-template-columns:1fr 2fr 1fr}
+.static-site .sidebar nav{margin-top:18px}
+.static-site .metric-label{color:#53627a;font-size:13px}
+.static-site .metric-value{color:#263b5a;font-size:34px;letter-spacing:-1px}
+.static-site .metric-card{padding:20px;min-height:125px}
+.static-site .metric-card p{font-size:12px;color:#65758b}
+.static-site .card-heading h3{font-size:15px;color:#354c6b}
+.static-site .section-line{margin-bottom:16px}
+.static-site .section-line h2{font-size:13px;color:#536780}
+.static-site .chart-legend,.static-site .heat-footer{font-size:11px;color:#60718b}
+.static-site #heat-value{max-width:65%;line-height:1.6}
+.static-site .chart-note,.static-site .chart-caption{font-size:12px;color:#6e7e94}
+.static-site .nav-link{font-size:14px}
+.static-site .daily-plot{height:270px}
+@media(max-width:1000px){
+  .filter-settings .filter-grid,.static-site .filter-settings .filter-grid{grid-template-columns:1fr 1fr}
+  .filter-settings .filter-grid>.date-field{grid-column:1/-1;grid-row:1}
+}
+@media(max-width:760px){
+  .filter-card{padding:0 14px;margin-bottom:18px}
+  .advanced-filters>summary{min-height:54px;font-size:12px;gap:10px}
+  .filter-overview{flex-wrap:wrap;gap:4px 10px}
+  .filter-toggle{font-size:12px}
+  .filter-settings .filter-grid{gap:14px}
+  .filter-settings .filter-bottom{gap:14px;padding:18px 0}
+  .filter-settings .inline-field{flex-wrap:wrap;font-size:12px}
+  .filter-settings .date-range input{width:0;min-width:0;flex:1;padding:8px 3px}
+  .period-presets button{font-size:11px;min-height:36px}
+  .filter-tools{align-items:flex-start;flex-wrap:nowrap;gap:8px}
+  #reset-filters{flex-shrink:0;padding:8px 0}
+  .static-site .metric-card{padding:14px;min-height:118px}
+  .static-site .metric-label{font-size:12px}
+  .static-site .metric-value{font-size:29px}
+  .static-site .metric-card p{font-size:11px;line-height:1.6}
+  .static-site .section-line{align-items:flex-start;gap:8px;flex-wrap:wrap}
+  .static-site #snapshot-time{font-size:11px}
+  .static-site .local-pill{display:none}
+  .static-site .chart-legend{font-size:10px}
+  .static-site .daily-plot{height:220px}
+  .static-site .heat-footer{flex-wrap:wrap;gap:8px;padding:10px 0;font-size:10px}
+  .static-site #heat-value{max-width:100%}
+}

@@ -132,3 +132,5 @@ tests/                      합성 데이터·단위/통합/브라우저 검증
 ```
 
 Plotly.js는 MIT, Nanum Gothic은 SIL Open Font License를 따릅니다. 글꼴 라이선스는 `postscope/assets/OFL.txt`에 있습니다. 자동 예약 수집·다중 사용자·공개 서비스는 기획안에 따라 후속 범위입니다.
+
+기본 분석 기간은 **2025-08-13부터 최신 기록까지**입니다. 2025-08-12의 대량 게시(6,979건) 다음 날을 기준으로 하며 `public/source.json`의 `analysis_start_date`로 지정합니다. 수집 시작일과는 별개입니다. 웹의 **상세 설정 → 초기 기록 포함**에서 이전 기록도 분석할 수 있습니다.

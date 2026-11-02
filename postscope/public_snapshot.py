@@ -69,7 +69,7 @@ def materialize(dataset,directory):
     return store,workspace_id,chat
 
 
-def publish_files(store,workspace_id,chat,output,period_start=None,period_end=None):
+def publish_files(store,workspace_id,chat,output,period_start=None,period_end=None,analysis_start=None):
     from .browser_engine import BrowserEngine
     from zoneinfo import ZoneInfo
     engine=BrowserEngine.__new__(BrowserEngine);engine.store=store
@@ -79,9 +79,12 @@ def publish_files(store,workspace_id,chat,output,period_start=None,period_end=No
     start=period_start or datetime.fromisoformat(info['first_message']).astimezone(zone).date().isoformat()
     end=period_end or datetime.fromisoformat(info['last_message']).astimezone(zone).date().isoformat()
     if workspace['is_demo']:start='2026-10-01'
-    info['period_start']=start
     info['period_start']=start;info['period_end']=end
-    config={'workspace_id':workspace_id,'chat_key':chat,'start':start,'end':end,'timezone':'Asia/Seoul','sender':'all','content':'all','unit':'messages','include_forwarded':True,'session_minutes':10}
+    analysis_start=analysis_start or start
+    if not start<=analysis_start<=end:raise ValueError('기본 분석 시작일이 수집 범위를 벗어났습니다.')
+    datetime.strptime(analysis_start,'%Y-%m-%d')
+    info['analysis_start']=analysis_start
+    config={'workspace_id':workspace_id,'chat_key':chat,'start':analysis_start,'end':end,'timezone':'Asia/Seoul','sender':'all','content':'all','unit':'messages','include_forwarded':True,'session_minutes':10}
     analysis=run_analysis(store,config)
     with store.connect() as db:
         records=json.loads(db.execute('SELECT records FROM analysis_runs WHERE id=?',(analysis['id'],)).fetchone()[0])

@@ -51,8 +51,15 @@ def test_static_initial_view_needs_only_snapshot_and_assets(static_page):
     assert not [url for method,url in network if 'pyodide' in url or 'engine.zip' in url]
     expect(page.locator('.heading-actions [data-import]')).to_be_hidden()
     expect(page.locator('#new-workspace')).to_be_hidden()
-    expect(page.locator('#workspace-select')).to_be_disabled()
+    expect(page.locator('.workspace-picker')).to_be_hidden()
+    expect(page.locator('.room-field')).to_be_hidden()
+    expect(page.locator('#quality-strip')).to_be_hidden()
+    expect(page.locator('#advanced-filters')).not_to_have_attribute('open','')
     if data['analysis']:
+        expect(page.locator('#filter-start')).to_have_value(data['analysis']['config']['start'])
+        expect(page.locator('#filter-summary')).to_have_text('전체 기간')
+        expect(page.locator('#filter-start')).to_be_hidden()
+        assert page.locator('#filter-section').bounding_box()['height']<70
         page.locator('[data-page="records"]').click()
         expect(page.locator('#records-body tr')).to_have_count(min(50,len(data['records'])))
     else:
@@ -68,6 +75,7 @@ def test_static_initial_view_needs_only_snapshot_and_assets(static_page):
 def test_static_filters_use_same_engine_and_export_offline_report(static_page,tmp_path):
     page,network,data=static_page
     if not data['analysis']:pytest.skip('Actual Telegram source has not produced a snapshot yet')
+    page.locator('#advanced-filters summary').click()
     page.locator('[name="content"]').select_option('photo')
     page.locator('#apply-filters').click()
     shutil.copy2(DIST/'snapshot.sqlite3',tmp_path/'postscope.sqlite3')
@@ -94,3 +102,25 @@ def test_static_png_download_is_real_image(static_page,tmp_path):
         page.locator('[data-export="png"]').click()
     path=tmp_path/'heatmap.png';download.value.save_as(path)
     assert Image.open(path).size==(1760,660)
+
+
+def test_history_is_optional_and_settings_fit_mobile(static_page):
+    page,network,data=static_page
+    if not data['analysis']:pytest.skip('Actual Telegram source has not produced a snapshot yet')
+    page.set_viewport_size({'width':360,'height':800})
+    page.locator('#advanced-filters summary').click()
+    expect(page.locator('#filter-start')).to_be_visible()
+    assert page.evaluate('document.body.scrollWidth')==360
+    chat=data['workspace']['chats'][0]
+    if chat.get('analysis_start')!=chat['period_start']:
+        page.locator('[data-period="history"]').click()
+        expect(page.locator('#filter-start')).to_have_value(chat['period_start'])
+        page.locator('#apply-filters').click()
+        total=data['analysis']['quality']['total_stored']-data['analysis']['quality']['service_excluded']
+        expect(page.locator('#metric-total')).to_have_text(f'{total:,}건',timeout=120000)
+    page.locator('#reset-filters').click()
+    expect(page.locator('#filter-start')).to_have_value(data['analysis']['config']['start'])
+    page.locator('#apply-filters').click()
+    expect(page.locator('#metric-total')).to_have_text(f"{data['analysis']['metrics']['total']:,}건",timeout=120000)
+    page.locator('#advanced-filters summary').click()
+    expect(page.locator('#filter-start')).to_be_hidden()

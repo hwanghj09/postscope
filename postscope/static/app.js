@@ -68,7 +68,8 @@ function periodRange(period){
   if(!chat||(!chat.first_message&&!chat.period_start)||(!chat.last_message&&!chat.period_end))return null;
   const zone=$('#timezone-select').value||state.workspace.timezone;
   const first=chat.period_start||localDate(chat.first_message,zone),end=chat.period_end||localDate(chat.last_message,zone);
-  const start=period==='all'?first:new Date(new Date(end+'T12:00:00Z').getTime()-(Number(period)-1)*86400000).toISOString().slice(0,10);
+  if(period==='history')return {start:first,end};
+  const start=period==='all'?(chat.analysis_start||first):new Date(new Date(end+'T12:00:00Z').getTime()-(Number(period)-1)*86400000).toISOString().slice(0,10);
   return {start:start<first?first:start,end};
 }
 function setPeriod(period){const range=periodRange(period);if(range){$('#filter-start').value=range.start;$('#filter-end').value=range.end}dirty()}
@@ -90,8 +91,11 @@ async function selectWorkspace(id){
   if(request!==state.workspaceRequest)return;
   state.workspace=workspace;state.analysis=null;state.applied=null;state.cursor=0;state.history=[];
   localStorage.setItem('postscope-workspace',id);$('#workspace-select').value=id;
-  $('#workspace-name').textContent=workspace.title;$('#demo-banner').hidden=!workspace.is_demo;
+  $('#workspace-name').textContent=siteMode?(workspace.chats[0]?.title||workspace.title):workspace.title;$('#demo-banner').hidden=!workspace.is_demo;
   $('#chat-select').innerHTML=workspace.chats.map(x=>option(x.chat_key,x.title)).join('');
+  $('.room-field').hidden=siteMode;
+  $('[data-period="history"]').hidden=!workspace.chats.some(chat=>chat.analysis_start&&chat.analysis_start!==chat.period_start);
+  $('#advanced-filters').open=false;
   $('#filters').reset();$('#timezone-select').value=workspace.timezone;fillSenders();
   for(const id of ['metric-total','metric-days','metric-interval','metric-peak'])$('#'+id).textContent='—';
   $('#dashboard-charts').hidden=true;$('#no-results').hidden=true;$('#days-footnote').hidden=true;$('#peak-footnote').textContent='';$('#analysis-range').textContent='';$('#snapshot-time').textContent='';$('#quality-brief').textContent='';$('#coverage-status').textContent='확인 중';$('#records-body').innerHTML='';
@@ -132,14 +136,22 @@ function renderDashboard(){
   $('#record-badge').textContent=nf.format(m.total);
   $('#analysis-range').textContent=d.config.start.replaceAll('-','.')+' – '+d.config.end.replaceAll('-','.');
   $('#snapshot-time').textContent=(siteMode?'갱신 ':'')+timestamp(siteMode?state.workspace.created_at:d.created_at,d.config.timezone);$('#applied-context').textContent=`${d.config.timezone} · ${d.config.unit==='messages'?'메시지':'게시 묶음'}`;
+  const range=periodRange('all'),summary=[];
+  summary.push(d.config.start===range?.start&&d.config.end===range?.end?'전체 기간':`${d.config.start.replaceAll('-','.')} – ${d.config.end.replaceAll('-','.')}`);
+  if(d.config.sender!=='all')summary.push(d.sender_label||'작성자 선택');
+  if(d.config.content!=='all')summary.push(types[d.config.content]||(d.config.content==='pdf'?'PDF':d.config.content));
+  if(d.config.unit!=='messages')summary.push('게시 묶음');
+  if(!d.config.include_forwarded)summary.push('전달 제외');
+  $('#filter-summary').textContent=summary.join(' · ');
   $('#coverage-status').textContent=d.quality.coverage;$('#coverage-dot').style.background=m.full_coverage?'#27b58a':'#cda25c';
   $('#coverage-status').style.color=m.full_coverage?'#5c967e':'#b49361';
   $('#quality-brief').textContent=`작성자 확인 ${d.quality.identified_ratio==null?'—':(d.quality.identified_ratio*100).toFixed(1)+'%'}${d.quality.quarantined?' · 제외 '+nf.format(d.quality.quarantined)+'건':''}${d.small_sample?' · 적은 표본':''}`;
   $('#session-count').textContent=nf.format(m.session_count)+'개';$('#session-size').textContent=fmt(m.session_median_size)+(m.session_median_size==null?'':'건');
-  $('#daily-caption').hidden=m.full_coverage;$('#daily-caption').textContent='범위 미확인 구간은 0건을 뜻하지 않습니다.';$('#no-results').hidden=m.total!==0;$('#dashboard-charts').hidden=m.total===0;
+  $('#daily-caption').hidden=siteMode||m.full_coverage;$('#daily-caption').textContent='범위 미확인 구간은 0건을 뜻하지 않습니다.';$('#no-results').hidden=m.total!==0;$('#dashboard-charts').hidden=m.total===0;
+  $('#daily-chart').setAttribute('aria-description',m.full_coverage?'':'범위 미확인 구간은 0건을 뜻하지 않습니다.');
   $('#hours-caption').textContent=d.config.timezone;
   const daily=d.daily,tooltip=`%{x}<br>%{y} ${unit}<br>${d.config.timezone}<extra></extra>`;
-  plot('daily-chart',[{x:daily.map(x=>x.date),y:daily.map(x=>x.status==='unknown'&&x.count===0?null:x.count),type:'scatter',mode:'lines',name:'관측 게시량',line:{color:'#5077ed',width:2.4,shape:'linear'},fill:'tozeroy',fillcolor:'rgba(75,113,230,.065)',hovertemplate:tooltip},{x:daily.map(x=>x.date),y:daily.map(x=>x.moving_average),type:'scatter',mode:'lines',name:'7일 이동평균',connectgaps:false,line:{color:'#6bbeb5',width:1.5,dash:'dot'},hovertemplate:`7일 평균 %{y:.1f} ${unit}<extra></extra>`}],{xaxis:{...plotBase.xaxis,type:'date',nticks:9,tickformat:'%m.%d'},yaxis:{...plotBase.yaxis,nticks:5}});
+  plot('daily-chart',[{x:daily.map(x=>x.date),y:daily.map(x=>x.status==='unknown'&&x.count===0?null:x.count),type:'scatter',mode:'lines',name:'관측 게시량',line:{color:'#5077ed',width:2.4,shape:'linear'},fill:'tozeroy',fillcolor:'rgba(75,113,230,.065)',hovertemplate:tooltip},{x:daily.map(x=>x.date),y:daily.map(x=>x.moving_average),type:'scatter',mode:'lines',name:'7일 이동평균',connectgaps:false,line:{color:'#6bbeb5',width:1.5,dash:'dot'},hovertemplate:`7일 평균 %{y:.1f} ${unit}<extra></extra>`}],{xaxis:{...plotBase.xaxis,type:'date',nticks:9,tickformat:siteMode?'%y.%m':'%m.%d'},yaxis:{...plotBase.yaxis,nticks:5}});
   renderWeekday();
   plot('hourly-chart',[{x:Array.from({length:24},(_,i)=>i),y:d.hours,type:'bar',marker:{color:d.hours.map((_,h)=>m.peak_hours.includes(h)?'#4168e9':'#b6c9f9'),cornerradius:3},hovertemplate:`%{x}시 · ${d.config.timezone}<br>%{y} ${unit}<extra></extra>`}],{xaxis:{...plotBase.xaxis,tickmode:'linear',dtick:3,ticksuffix:'시'},bargap:.35});
   plot('interval-chart',[{x:['1분 미만','1~5분','5~10분','10분~1시간','1~6시간','6시간 이상'],y:d.interval_histogram,type:'bar',marker:{color:'#9cb7f4',cornerradius:4},hovertemplate:'%{x}<br>%{y}개 관측 간격<extra></extra>'}],{bargap:.55});
@@ -171,7 +183,8 @@ function renderHeat(){
     }
   }
   $('#heatmap').innerHTML=html;$('#heat-scroll').hidden=state.heatTable;$('#heat-table').hidden=!state.heatTable;
-  $('#heat-subtitle').hidden=d.metrics.full_coverage;$('#heat-subtitle').textContent=rate?'확인된 관측 시간으로 계산합니다.':'사선: 조회 범위 미확인';
+  $('#heat-subtitle').hidden=siteMode||d.metrics.full_coverage;$('#heat-subtitle').textContent=rate?'확인된 관측 시간으로 계산합니다.':'사선: 조회 범위 미확인';
+  $('#heatmap').setAttribute('aria-description',d.metrics.full_coverage?'':'사선: 조회 범위 미확인');
   if(state.heatTable)$('#heat-table').innerHTML='<table><caption>'+esc(rate?'시간당 게시율 (건/시간)':'관측 게시량 (건)')+'</caption><thead><tr><th>요일 / 시</th>'+Array.from({length:24},(_,h)=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+cells.map((row,w)=>`<tr><th>${['월','화','수','목','금','토','일'][w]}</th>${row.map((value,h)=>`<td>${value==null?'—':fmt(value)}${!rate&&!d.exposure[w][h]?' *':''}</td>`).join('')}</tr>`).join('')+'</tbody></table>';
 }
 function resizeCharts(){$$('.plot').filter(x=>x.offsetParent&&x.data).forEach(x=>Plotly.Plots.resize(x))}
@@ -188,7 +201,7 @@ function navigate(page){
   $$('.nav-link').forEach(link=>{const active=link.dataset.page===state.page;link.classList.toggle('active',active);if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current')});
   $('#breadcrumb-page').textContent=names[state.page];$('#page-title').textContent=names[state.page];
   $('#filter-section').hidden=!hasChat||!['dashboard','records','comparison'].includes(state.page);
-  $('#quality-strip').hidden=!hasChat||state.page==='settings';
+  $('#quality-strip').hidden=siteMode||!hasChat||state.page==='settings';
   $('#empty-state').hidden=hasChat||['settings','quality'].includes(state.page);
   $('#header-export').disabled=!state.analysis;
   setMenu(false);
@@ -409,10 +422,16 @@ $('#connection-status').onclick=event=>{const button=event.target.closest('[data
 $('#delete-workspace').onclick=()=>{$('#delete-confirm').value='';clearFeedback($('#delete-dialog'));$('#delete-dialog').showModal()};
 $('#delete-form').onsubmit=event=>{event.preventDefault();action($('#delete-form button'),async()=>{await api('/api/workspaces/'+state.workspace.id+'?confirm='+encodeURIComponent($('#delete-confirm').value),{method:'DELETE'});$('#delete-dialog').close();state.analysis=null;localStorage.removeItem('postscope-workspace');await loadWorkspaces();toast('삭제됨','success')})};
 if(siteMode){
-  $$('[data-import],#new-workspace,[data-page="settings"],#start-own').forEach(node=>node.hidden=true);
+  document.body.classList.add('static-site');
+  $$('[data-import],.workspace-label,.workspace-picker,[data-page="settings"],#start-own').forEach(node=>node.hidden=true);
   $('#workspace-select').disabled=true;
-  $('.heading-actions').insertAdjacentHTML('afterbegin','<button class="button" id="refresh-data">새로고침</button>');
-  $('#refresh-data').onclick=()=>location.reload();
+  $('#header-export').innerHTML='<svg><use href="#i-download"/></svg>다운로드';
+  $('#heat-value').textContent='';
+  $('#applied-context').hidden=true;
+  $('[data-page="quality"]').lastChild.textContent='수집 정보';
+  $('[data-page="reports"]').lastChild.textContent='다운로드';
+  names.quality='수집 정보';names.reports='다운로드';
+  $$('.metric-label').forEach((node,index)=>node.firstChild.textContent=['게시물','게시일','게시 간격 중앙값','가장 활발한 시간'][index]);
   $('#demo-banner>span').innerHTML='<span class="demo-label">DEMO</span>합성 데모 데이터';
   $('#include-ids').closest('details').hidden=true;
   $('#load-demo').hidden=true;

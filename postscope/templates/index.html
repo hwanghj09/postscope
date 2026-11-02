@@ -51,21 +51,24 @@
       <button class="button primary" data-import>JSON 가져오기</button><button class="button" id="load-demo">데모 보기</button>
     </section>
     <section class="filter-card card" id="filter-section">
-      <div class="filter-heading"><b>필터</b><span id="dirty-indicator" class="dirty-indicator" hidden>변경 미적용</span><button class="text-button" id="reset-filters">초기화</button></div>
       <form id="filters">
+        <details id="advanced-filters" class="advanced-filters">
+          <summary><span class="filter-overview"><b id="filter-summary">전체 기간</b><span id="dirty-indicator" class="dirty-indicator" hidden>변경 미적용</span></span><span class="filter-toggle">상세 설정</span></summary>
+        <div class="filter-settings">
+        <div class="filter-tools"><div class="period-presets" role="group" aria-label="기간 빠른 선택"><button type="button" data-period="all">전체 기간</button><button type="button" data-period="7">최근 7일</button><button type="button" data-period="30">최근 30일</button><button type="button" data-period="history" hidden>초기 기록 포함</button></div><button type="button" class="text-button" id="reset-filters">초기화</button></div>
         <div class="filter-grid">
           <label class="field room-field">대화<select id="chat-select" name="chat_key"></select></label>
           <label class="field">작성자<select name="sender" id="sender-select"><option value="all">전체 작성자</option></select></label>
           <label class="field date-field">기간<div class="date-range"><input type="date" name="start" id="filter-start" required aria-label="분석 시작일"><span>–</span><input type="date" name="end" id="filter-end" required aria-label="분석 종료일"></div></label>
           <label class="field">유형<select name="content"><option value="all">전체</option><option value="text">텍스트</option><option value="document">문서</option><option value="pdf">PDF</option><option value="photo">사진</option><option value="video">영상</option><option value="audio">오디오</option><option value="other">기타</option><option value="unknown">미확인</option></select></label>
-          <button type="submit" class="button primary apply-button" id="apply-filters">적용</button>
         </div>
-        <div class="filter-tools"><div class="period-presets" role="group" aria-label="기간 빠른 선택"><button type="button" data-period="all">전체</button><button type="button" data-period="7">최근 7일</button><button type="button" data-period="30">최근 30일</button></div><span id="applied-context" class="small muted"></span></div>
-        <details id="advanced-filters" class="advanced-filters"><summary>상세 필터</summary><div class="filter-bottom">
+        <div class="filter-bottom">
           <label class="inline-field">시간대<select name="timezone" id="timezone-select"><option>Asia/Seoul</option><option>UTC</option><option>America/New_York</option><option>Europe/London</option><option>Asia/Tokyo</option><option>Asia/Kathmandu</option></select></label>
           <label class="inline-field">집계<select name="unit" id="unit-select"><option value="messages">메시지 수</option><option value="albums" id="album-option">게시 묶음 수</option></select></label>
           <label class="checkbox-label"><input type="checkbox" name="include_forwarded" checked>전달 포함</label>
           <label class="inline-field session-field">연속 게시 기준<input type="number" name="session_minutes" value="10" min="1" max="60" aria-label="연속 게시 기준 분">분</label>
+        </div>
+        <div class="filter-actions"><span id="applied-context" class="small muted"></span><button type="submit" class="button primary" id="apply-filters">적용</button></div>
         </div></details>
       </form>
     </section>

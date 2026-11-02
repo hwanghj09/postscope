@@ -67,6 +67,7 @@ def test_dashboard_charts_filters_heat_keyboard_and_pages(browser_page):
     page.locator('.heat-cell').first.focus();page.keyboard.press('ArrowRight')
     assert page.locator('.heat-cell').nth(1).evaluate('(el)=>el===document.activeElement')
     page.locator('[data-heat="table"]').click();expect(page.locator('#heat-table')).to_be_visible()
+    page.locator('#advanced-filters summary').click()
     page.locator('[name="content"]').select_option('photo');expect(page.locator('#dirty-indicator')).to_be_visible()
     assert '2,266' in page.locator('#metric-total').inner_text()
     page.locator('#filters button[type="submit"]').click();expect(page.locator('#dirty-indicator')).to_be_hidden()
@@ -88,7 +89,7 @@ def test_import_export_and_offline_report(browser_page,sample,tmp_path):
     page.locator('#import-options summary').click()
     page.locator('#source-timezone').select_option('Asia/Seoul');page.locator('#accept-partial').check();page.locator('#import-submit').click()
     expect(page.locator('#import-dialog')).not_to_be_visible(timeout=20000)
-    page.locator('[data-page="dashboard"]').click();page.locator('#filter-start').fill('2026-11-02');page.locator('#filter-end').fill('2026-11-02');page.locator('#filters button[type="submit"]').click()
+    page.locator('[data-page="dashboard"]').click();page.locator('#advanced-filters summary').click();page.locator('#filter-start').fill('2026-11-02');page.locator('#filter-end').fill('2026-11-02');page.locator('#filters button[type="submit"]').click()
     expect(page.locator('#metric-total')).to_contain_text('3건')
     expect(page.locator('#coverage-status')).to_have_text('내보내기 범위 미확인')
     assert page.evaluate('typeof window.bad')=='undefined'
@@ -128,6 +129,7 @@ def test_period_presets_and_filter_reset(browser_page):
     page=browser_page;select_demo(page)
     expect(page.locator('#toast-region .toast')).to_have_count(0)
     expect(page.locator('#apply-filters')).to_be_disabled()
+    page.locator('#advanced-filters summary').click()
     page.locator('[data-period="7"]').click()
     expect(page.locator('#filter-start')).to_have_value('2026-10-25')
     expect(page.locator('#filter-end')).to_have_value('2026-10-31')
@@ -195,6 +197,7 @@ def test_late_analysis_does_not_replace_new_workspace(browser_page):
     def hold_analysis(route):
         held.append((route,route.fetch()))
     page.route('**/api/analyses',hold_analysis)
+    page.locator('#advanced-filters summary').click()
     page.locator('[name="content"]').select_option('photo')
     page.locator('#apply-filters').click()
     expect(page.locator('#page-dashboard')).to_have_attribute('aria-busy','true')

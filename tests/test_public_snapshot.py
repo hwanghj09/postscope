@@ -57,3 +57,18 @@ def test_daily_collection_refuses_synthetic_generation(tmp_path,monkeypatch):
     import pytest
     with pytest.raises(ValueError,match='합성 데이터'):asyncio.run(module.collect())
     assert not module.OUTPUT.exists()
+
+
+def test_default_analysis_excludes_initial_burst_but_keeps_history(tmp_path):
+    rows=[normalize({'id':str(i),'date':date+'T12:00:00+09:00','text':'x'})[0]
+          for i,date in enumerate(['2025-08-11','2025-08-12','2025-08-13'],1)]
+    dataset=public_dataset(rows,secret='test',title='archive',start='2025-08-01T00:00:00+09:00',
+                           end='2025-08-14T00:00:00+09:00')
+    store,workspace,chat=materialize(dataset,tmp_path/'store')
+    snapshot=publish_files(store,workspace,chat,tmp_path/'public','2025-08-01','2025-08-13',analysis_start='2025-08-13')
+    assert snapshot['analysis']['config']['start']=='2025-08-13'
+    assert snapshot['analysis']['metrics']['total']==1
+    assert snapshot['workspace']['chats'][0]['period_start']=='2025-08-01'
+    from postscope.services.analysis import run_analysis
+    history=run_analysis(store,{**snapshot['analysis']['config'],'start':'2025-08-01'})
+    assert history['metrics']['total']==3

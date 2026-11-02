@@ -4,15 +4,14 @@ import hashlib
 import importlib.util
 import json
 import shutil
+import subprocess
 import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from postscope.storage import Store
-from postscope.demo import create_demo
-from postscope.public_snapshot import materialize,publish_files
+from postscope.public_snapshot import materialize,publish_files,publish_pending
 
 ROOT=Path(__file__).resolve().parents[1]
 OUTPUT=ROOT/'web-dist'
@@ -66,19 +65,25 @@ def get_plotlyjs():return (ROOT/'static'/'plotly.min.js').read_text()
         dataset_file=ROOT/'public'/'dataset.json'
         if dataset_file.exists():
             dataset=json.loads(dataset_file.read_text(encoding='utf-8'))
-            store,workspace,chat=materialize(dataset,directory)
-            from datetime import datetime,timedelta
-            from zoneinfo import ZoneInfo
-            zone=ZoneInfo('Asia/Seoul')
-            start=datetime.fromisoformat(dataset['requested_start_utc']).astimezone(zone).date().isoformat()
-            end=(datetime.fromisoformat(dataset['requested_end_utc'])-timedelta(microseconds=1)).astimezone(zone).date().isoformat()
-            publish_files(store,workspace,chat,OUTPUT,start,end)
+            if dataset.get('is_demo') or dataset.get('source') in {'demo','synthetic'}:
+                publish_pending(OUTPUT)
+            else:
+                store,workspace,chat=materialize(dataset,directory)
+                from datetime import datetime,timedelta
+                from zoneinfo import ZoneInfo
+                zone=ZoneInfo('Asia/Seoul')
+                start=datetime.fromisoformat(dataset['requested_start_utc']).astimezone(zone).date().isoformat()
+                end=(datetime.fromisoformat(dataset['requested_end_utc'])-timedelta(microseconds=1)).astimezone(zone).date().isoformat()
+                publish_files(store,workspace,chat,OUTPUT,start,end)
         else:
-            store=Store(directory);workspace=create_demo(store)
-            publish_files(store,workspace,'channel:10001',OUTPUT)
+            config=json.loads((ROOT/'public'/'source.json').read_text(encoding='utf-8'))
+            publish_pending(OUTPUT,config.get('label','텔레그램 게시 기록'))
     html=(ROOT/'postscope/templates/index.html').read_text()
     html=html.replace('{{ token }}','static').replace('<meta name="postscope-token"','<meta name="postscope-mode" content="static"><meta name="postscope-token"')
     html=html.replace('href="/static/','href="./static/').replace('src="/static/','src="./static/')
+    revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()[:12]
+    html=html.replace('src="./static/app.js"',f'src="./static/app.js?v={revision}"')
+    html=html.replace('href="./static/style.css"',f'href="./static/style.css?v={revision}"')
     html=html.replace('로컬 웹 앱','일일 게시 기록 분석').replace('<span class="online-dot"></span>로컬','<span class="online-dot"></span>하루 1회 갱신')
     (OUTPUT/'index.html').write_text(html)
     css=OUTPUT/'static/style.css';css.write_text(css.read_text().replace("url('/assets/","url('../assets/"))

@@ -1,6 +1,6 @@
 {
-  "mode": "demo",
-  "chat": "",
-  "label": "PostScope 리서치 그룹",
+  "mode": "telegram",
+  "chat": "https://t.me/yubin_MPGA",
+  "label": "유빈 아카이브",
   "lookback_days": 90
 }

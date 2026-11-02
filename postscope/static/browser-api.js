@@ -4,6 +4,7 @@ let sequence=0,bootError=null,storageWarned=false;
 function ensureWorker(){
 if(worker)return worker;
 const url=new URL('./browser-worker.js',import.meta.url);
+url.search=new URL(import.meta.url).search;
 if(document.querySelector('meta[name="postscope-mode"]')?.content==='static')url.searchParams.set('snapshot','1');
 worker=new Worker(url);
 worker.onmessage=event=>{

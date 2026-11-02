@@ -5,15 +5,12 @@ import json
 import os
 from pathlib import Path
 import sys
-import tempfile
 from zoneinfo import ZoneInfo
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from telethon import TelegramClient,errors,types
 from telethon.sessions import StringSession
 from postscope.adapters.telegram import message_metadata
 from postscope.public_snapshot import public_dataset
-from postscope.storage import Store,now
-from postscope.demo import create_demo
 
 ROOT=Path(__file__).resolve().parents[1]
 OUTPUT=ROOT/'public'/'dataset.json'
@@ -23,17 +20,8 @@ async def collect():
     config_path=ROOT/'public'/'source.json'
     config=json.loads(config_path.read_text()) if config_path.exists() else {}
     target=os.environ.get('TELEGRAM_CHAT') or config.get('chat')
-    if config.get('mode')=='demo' and not target:
-        with tempfile.TemporaryDirectory() as directory:
-            store=Store(directory);workspace=create_demo(store)
-            with store.connect() as db:
-                messages=[dict(row) for row in db.execute('SELECT * FROM messages WHERE workspace_id=?',(workspace,))]
-                window=db.execute('SELECT start_utc,end_utc FROM observation_windows WHERE workspace_id=?',(workspace,)).fetchone()
-            dataset=public_dataset(messages,secret='postscope-synthetic-demo',title=config.get('label','데모'),start=window[0],end=window[1],collected_at=now(),source='synthetic',complete=True)
-            dataset['is_demo']=True
-        write_dataset(dataset)
-        print(f'합성 데모 갱신: {len(messages)}건. 실제 Telegram 수집이 아닙니다.')
-        return
+    if config.get('mode') in {'demo','synthetic'}:
+        raise ValueError('합성 데이터 갱신은 비활성화됐습니다. 실제 Telegram 채널을 설정하세요.')
     if not target:raise ValueError('수집할 채널을 public/source.json 또는 TELEGRAM_CHAT에 설정하세요.')
     missing=[key for key in ['TELEGRAM_API_ID','TELEGRAM_API_HASH','TELEGRAM_SESSION'] if not os.environ.get(key)]
     if missing:raise ValueError('GitHub Secrets 설정 필요: '+', '.join(missing))

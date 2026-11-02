@@ -12,12 +12,12 @@ def save_secret(repo,name,value):
     subprocess.run(['gh','secret','set',name,'--repo',repo],input=value,text=True,check=True)
 
 
-async def configure(repo):
+async def configure(repo,target=None):
     if not shutil.which('gh'):raise ValueError('GitHub CLI를 설치하고 gh auth login으로 로그인하세요.')
     api_id=int(input('Telegram API ID: ').strip())
     api_hash=getpass.getpass('Telegram API Hash: ').strip()
     phone=getpass.getpass('전화번호 (+국가코드): ').strip()
-    target=input('수집할 채널 @아이디 또는 방 ID: ').strip()
+    target=target or input('수집할 채널 @아이디 또는 방 ID: ').strip()
     if not target:raise ValueError('수집할 방을 입력하세요.')
     client=TelegramClient(StringSession(),api_id,api_hash)
     try:
@@ -35,7 +35,7 @@ async def configure(repo):
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--repo',default='hwanghj09/postscope');args=parser.parse_args()
-    try:asyncio.run(configure(args.repo))
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--repo',default='hwanghj09/postscope');parser.add_argument('--chat');args=parser.parse_args()
+    try:asyncio.run(configure(args.repo,args.chat))
     except Exception:
         raise SystemExit('설정하지 못했습니다. GitHub 로그인·권한 및 Telegram 인증·방 접근을 확인하세요.') from None

@@ -34,7 +34,10 @@ def static_page(static_server):
         page.context.on('request',lambda request:network.append((request.method,request.url)))
         page.goto(static_server)
         expected=json.loads((DIST/'snapshot.json').read_text(encoding='utf-8'))
-        expect(page.locator('#metric-total')).to_have_text(f"{expected['analysis']['metrics']['total']:,}건",timeout=20000)
+        if expected['analysis']:
+            expect(page.locator('#metric-total')).to_have_text(f"{expected['analysis']['metrics']['total']:,}건",timeout=20000)
+        else:
+            expect(page.locator('#empty-state')).to_be_visible(timeout=20000)
         yield page,network,expected
         assert not errors,errors
         assert not [request for request in network if '/api/' in request[1]],network
@@ -49,14 +52,22 @@ def test_static_initial_view_needs_only_snapshot_and_assets(static_page):
     expect(page.locator('.heading-actions [data-import]')).to_be_hidden()
     expect(page.locator('#new-workspace')).to_be_hidden()
     expect(page.locator('#workspace-select')).to_be_disabled()
-    page.locator('[data-page="records"]').click()
-    expect(page.locator('#records-body tr')).to_have_count(min(50,len(data['records'])))
+    if data['analysis']:
+        page.locator('[data-page="records"]').click()
+        expect(page.locator('#records-body tr')).to_have_count(min(50,len(data['records'])))
+    else:
+        expect(page.locator('#empty-state h2')).to_have_text('실제 데이터 연결 대기')
+        expect(page.locator('#page-dashboard')).to_be_hidden()
+        expect(page.locator('#demo-banner')).to_be_hidden()
+        expect(page.locator('#load-demo')).to_be_hidden()
+        expect(page.locator('#header-export')).to_be_disabled()
     page.set_viewport_size({'width':360,'height':800})
     assert page.evaluate('document.body.scrollWidth')==360
 
 
 def test_static_filters_use_same_engine_and_export_offline_report(static_page,tmp_path):
     page,network,data=static_page
+    if not data['analysis']:pytest.skip('Actual Telegram source has not produced a snapshot yet')
     page.locator('[name="content"]').select_option('photo')
     page.locator('#apply-filters').click()
     shutil.copy2(DIST/'snapshot.sqlite3',tmp_path/'postscope.sqlite3')
@@ -77,6 +88,7 @@ def test_static_filters_use_same_engine_and_export_offline_report(static_page,tm
 def test_static_png_download_is_real_image(static_page,tmp_path):
     from PIL import Image
     page,network,data=static_page
+    if not data['analysis']:pytest.skip('Actual Telegram source has not produced a snapshot yet')
     page.locator('#header-export').click()
     with page.expect_download(timeout=120000) as download:
         page.locator('[data-export="png"]').click()

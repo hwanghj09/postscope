@@ -10,6 +10,19 @@ from .services.analysis import run_analysis
 FIELDS=('sent_at_utc','edited_at_utc','expires_at_utc','content_kind','document_mime','is_forwarded','is_service','lifecycle')
 
 
+def publish_pending(output,title='텔레그램 게시 기록'):
+    """Missing source is unknown data, never a successful zero or synthetic result."""
+    snapshot={'schema_version':1,'status':'awaiting_source','updated_at':None,
+              'workspace':{'id':'telegram-pending','title':title,'timezone':'Asia/Seoul',
+                           'created_at':None,'revision':0,'is_demo':False,'connection_required':True,
+                           'chats':[],'senders':[],'jobs':[],'quarantine':[]},
+              'analysis':None,'records':[]}
+    directory=Path(output);directory.mkdir(parents=True,exist_ok=True)
+    (directory/'snapshot.json').write_text(json.dumps(snapshot,ensure_ascii=False),encoding='utf-8')
+    (directory/'snapshot.sqlite3').unlink(missing_ok=True)
+    return snapshot
+
+
 def pseudonym(value,secret,domain):
     digest=hmac.new(secret.encode(),(domain+'\0'+str(value)).encode(),hashlib.sha256).hexdigest()
     return str(int(digest[:15],16)),digest[:6].upper()

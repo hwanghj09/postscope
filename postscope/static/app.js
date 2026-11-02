@@ -11,7 +11,7 @@ const types={text:'텍스트',document:'문서',photo:'사진',video:'영상',au
 const state={workspace:null,workspaces:[],analysis:null,applied:null,page:'dashboard',heat:'count',heatTable:false,cursor:0,history:[],upload:null,connection:null,authStage:'code',chatOffset:0,loading:0,poller:null,workspaceRequest:0,analysisRequest:0,recordsRequest:0,previewRequest:0,applying:false,previewing:false,importBusy:false};
 
 async function api(path,options={}){
-  if(webMode){browserClient??=import(siteMode?'./static-api.js':'./browser-api.js');return (await browserClient).request(path,options)}
+  if(webMode){const url=new URL(siteMode?'./static-api.js':'./browser-api.js',import.meta.url);url.search=new URL(import.meta.url).search;browserClient??=import(url.href);return (await browserClient).request(path,options)}
   const headers={'X-PostScope-Token':$('meta[name="postscope-token"]').content,...options.headers};
   if(options.body&&!(options.body instanceof FormData)){headers['Content-Type']='application/json';options.body=JSON.stringify(options.body)}
   const response=await fetch(path,{...options,headers,credentials:'same-origin'});
@@ -221,7 +221,7 @@ function renderQuality(){
     $('#quality-badge').textContent=q.coverage;
     const pairs=[['저장된 메시지',fmt(q.total_stored)+'건'],['작성자 확인',q.identified_ratio==null?'—':(q.identified_ratio*100).toFixed(1)+'%'],['서비스 이벤트 제외',fmt(q.service_excluded)+'건'],['서명만 있는 비율',q.signature_ratio==null?'—':(q.signature_ratio*100).toFixed(1)+'%'],['중복 / 제외',fmt(q.duplicates)+' / '+fmt(q.quarantined)+'건'],['필드 충돌',fmt(q.conflicts)+'건'],['앨범 식별자',q.album_supported?'있음':'없음'],['불완전 앨범 제외',fmt(data.incomplete_albums)+'묶음'],['첫 기록',timestamp(q.first_message,data.config.timezone)],['마지막 기록',timestamp(q.last_message,data.config.timezone)],['마지막 갱신',timestamp(q.last_updated,data.config.timezone)],['확인된 조회 시간',fmt(data.metrics.observed_hours)+'시간']];
     $('#quality-details').innerHTML='<div class="detail-grid">'+pairs.map(([key,value])=>`<div class="detail-item"><span>${esc(key)}</span><b>${esc(value)}</b></div>`).join('')+'</div>';
-  }else{$('#quality-details').innerHTML='<p class="muted">아직 가져온 기록이 없습니다.</p>';$('#quality-badge').textContent='데이터 없음'}
+  }else{$('#quality-details').innerHTML='<p class="muted">'+(state.workspace?.connection_required?'실제 Telegram 채널을 연결해야 수집이 시작됩니다.':'아직 가져온 기록이 없습니다.')+'</p>';$('#quality-badge').textContent=state.workspace?.connection_required?'연결 대기':'데이터 없음'}
   const statuses={queued:'대기',running:'수집 중',waiting:'재시도 대기',paused:'일시정지',completed:'완료',failed:'실패',cancelled:'취소'};
   $('#jobs-list').innerHTML=(state.workspace?.jobs||[]).map(job=>`<div class="job-item"><span class="badge">${esc(statuses[job.state]||job.state)}</span><div class="job-info">${job.kind==='json'?'JSON':'API'} · ${nf.format(job.processed)}건<small>${esc(job.error||'')}${job.next_retry_at?' · 재개 '+esc(timestamp(job.next_retry_at)):''}</small>${job.stats.same_file?'<small>이미 가져온 파일</small>':''}</div>${job.kind==='api'&&!['completed','cancelled','failed'].includes(job.state)?`<button class="button" data-job="${job.id}" data-action="${job.state==='paused'||!job.worker_active?'resume':'pause'}">${job.state==='paused'||!job.worker_active?'재개':'일시정지'}</button><button class="button" data-job="${job.id}" data-action="cancel">취소</button>`:''}</div>`).join('')||'<p class="muted small">작업 없음</p>';
   const rows=state.workspace?.quarantine||[];
@@ -415,5 +415,8 @@ if(siteMode){
   $('#refresh-data').onclick=()=>location.reload();
   $('#demo-banner>span').innerHTML='<span class="demo-label">DEMO</span>합성 데모 데이터';
   $('#include-ids').closest('details').hidden=true;
+  $('#load-demo').hidden=true;
+  $('#empty-state h2').textContent='실제 데이터 연결 대기';
+  $('#empty-state p').textContent='채널 연결 후 매일 수집한 게시 통계를 표시합니다.';
 }
 loading(true);loadWorkspaces().then(()=>navigate(location.hash.slice(1)||'dashboard')).catch(error=>toast(error.message,'error')).finally(()=>loading(false));

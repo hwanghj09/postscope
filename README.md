@@ -8,13 +8,13 @@ Actions가 매일 갱신한 게시 데이터를 보여주는 **정적 웹 대시
 
 웹은 정적 파일로 제공됩니다. Actions가 매일 **09:05 (Asia/Seoul)** 한 번 데이터를 갱신하고 웹을 배포합니다. 웹에서는 저장된 스냅샷을 표시하며, 로그인·실시간 수집·업로드 서버가 없습니다. 최초 화면은 JSON 집계 파일만 읽고, 추가 필터·내보내기는 브라우저에서 기존 Python 분석 엔진을 실행합니다.
 
-현재 소스는 이전에 사용한 **합성 데모**입니다. 실제 텔레그램 수집으로 표시하지 않습니다. `public/source.json`에 소스 설정을, `public/dataset.json`에 마지막 정상 데이터를 보관합니다. 수집 실패 시 파일을 교체하거나 사이트를 배포하지 않아 마지막 성공 데이터를 유지합니다. GitHub의 예약 실행은 서버 부하에 따라 지연될 수 있습니다.
+현재 수집 대상은 **유빈 아카이브(https://t.me/yubin_MPGA), 전체 작성자**입니다. 합성 데이터 생성·게시 경로는 꺼져 있습니다. 최초 실제 수집 전에는 통계 대신 연결 대기 상태를 표시합니다. `public/source.json`에 소스 설정을, `public/dataset.json`에 마지막 정상 데이터를 보관합니다. 수집 실패 시 파일을 교체하거나 사이트를 배포하지 않아 마지막 성공 데이터를 유지합니다. GitHub의 예약 실행은 서버 부하에 따라 지연될 수 있습니다.
 
 실제 채널을 연결하려면 본인의 PC에서 GitHub CLI에 로그인한 뒤 다음을 실행하세요. 앱 ID·해시·세션·대상 방을 GitHub Secrets로 직접 저장하며 인증값은 화면이나 Git에 출력하지 않습니다.
 
 ```bash
 uv sync --frozen
-uv run python scripts/configure_daily.py --repo hwanghj09/postscope
+uv run python scripts/configure_daily.py --repo hwanghj09/postscope --chat yubin_MPGA
 ```
 
 이후 Actions의 **Deploy website → Run workflow → collect 체크**로 첫 수집을 실행합니다. Secrets는 `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION`, `TELEGRAM_CHAT`입니다. 기본은 전체 작성자·최근 90일이며, 게시 본문·파일·원본 계정 ID·세션을 공개 데이터에 넣지 않습니다.

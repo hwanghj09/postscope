@@ -131,7 +131,7 @@ function renderDashboard(){
   $('#days-footnote').hidden=m.daily_average==null;$('#days-footnote').textContent=m.daily_average==null?'':`하루 평균 ${fmt(m.daily_average)}${unit}`;
   $('#record-badge').textContent=nf.format(m.total);
   $('#analysis-range').textContent=d.config.start.replaceAll('-','.')+' – '+d.config.end.replaceAll('-','.');
-  $('#snapshot-time').textContent=timestamp(d.created_at,d.config.timezone);$('#applied-context').textContent=`${d.config.timezone} · ${d.config.unit==='messages'?'메시지':'게시 묶음'}`;
+  $('#snapshot-time').textContent=(siteMode?'갱신 ':'')+timestamp(siteMode?state.workspace.created_at:d.created_at,d.config.timezone);$('#applied-context').textContent=`${d.config.timezone} · ${d.config.unit==='messages'?'메시지':'게시 묶음'}`;
   $('#coverage-status').textContent=d.quality.coverage;$('#coverage-dot').style.background=m.full_coverage?'#27b58a':'#cda25c';
   $('#coverage-status').style.color=m.full_coverage?'#5c967e':'#b49361';
   $('#quality-brief').textContent=`작성자 확인 ${d.quality.identified_ratio==null?'—':(d.quality.identified_ratio*100).toFixed(1)+'%'}${d.quality.quarantined?' · 제외 '+nf.format(d.quality.quarantined)+'건':''}${d.small_sample?' · 적은 표본':''}`;
@@ -413,7 +413,7 @@ if(siteMode){
   $('#workspace-select').disabled=true;
   $('.heading-actions').insertAdjacentHTML('afterbegin','<button class="button" id="refresh-data">새로고침</button>');
   $('#refresh-data').onclick=()=>location.reload();
-  $('#demo-banner>span').innerHTML='<span class="demo-label">DEMO</span>수집 설정 전 샘플 데이터';
+  $('#demo-banner>span').innerHTML='<span class="demo-label">DEMO</span>합성 데모 데이터';
   $('#include-ids').closest('details').hidden=true;
 }
 loading(true);loadWorkspaces().then(()=>navigate(location.hash.slice(1)||'dashboard')).catch(error=>toast(error.message,'error')).finally(()=>loading(false));

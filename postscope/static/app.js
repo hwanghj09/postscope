@@ -6,7 +6,7 @@ let browserClient;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nf=new Intl.NumberFormat('ko-KR');
 const fmt=value=>value==null?'계산 불가':nf.format(Math.round(value*10)/10);
-const names={dashboard:'대시보드',records:'게시 기록',comparison:'기간 비교',quality:'데이터 품질',reports:'내보내기',settings:'설정'};
+const names={dashboard:'대시보드',gaps:'공백 분석',records:'게시 기록',comparison:'기간 비교',quality:'데이터 품질',reports:'내보내기',settings:'설정'};
 const types={text:'텍스트',document:'문서',photo:'사진',video:'영상',audio:'오디오',other:'기타',unknown:'미확인'};
 const state={workspace:null,workspaces:[],analysis:null,applied:null,page:'dashboard',heat:'count',heatTable:false,cursor:0,history:[],upload:null,connection:null,authStage:'code',chatOffset:0,loading:0,poller:null,workspaceRequest:0,analysisRequest:0,recordsRequest:0,previewRequest:0,applying:false,previewing:false,importBusy:false};
 
@@ -114,7 +114,7 @@ async function applyFilters(extra={},base=null){
     const result=await api('/api/analyses',{method:'POST',body:config});
     if(request!==state.analysisRequest||state.workspace.id!==config.workspace_id)return;
     state.analysis=result;state.applied=config;state.cursor=0;state.history=[];
-    renderDashboard();renderQuality();renderComparison();renderReport();
+    renderDashboard();renderQuality();renderComparison();renderReport();renderGaps();
     $('#header-export').disabled=false;
     if(state.page==='records')await loadRecords();
   }catch(error){if(request===state.analysisRequest)toast(error.message,'error')}
@@ -188,6 +188,35 @@ function renderHeat(){
   if(state.heatTable)$('#heat-table').innerHTML='<table><caption>'+esc(rate?'시간당 게시율 (건/시간)':'관측 게시량 (건)')+'</caption><thead><tr><th>요일 / 시</th>'+Array.from({length:24},(_,h)=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+cells.map((row,w)=>`<tr><th>${['월','화','수','목','금','토','일'][w]}</th>${row.map((value,h)=>`<td>${value==null?'—':fmt(value)}${!rate&&!d.exposure[w][h]?' *':''}</td>`).join('')}</tr>`).join('')+'</tbody></table>';
 }
 function resizeCharts(){$$('.plot').filter(x=>x.offsetParent&&x.data).forEach(x=>Plotly.Plots.resize(x))}
+function gapLabel(gap){const start=gap.start.replaceAll('-','.');return gap.start===gap.end?start:`${start} – ${(gap.start.slice(0,4)===gap.end.slice(0,4)?gap.end.slice(5):gap.end).replaceAll('-','.')}`}
+function renderGaps(){
+  const data=state.analysis?.gaps;if(!data)return;
+  const minimum=Number($('#gap-minimum').value),sort=$('#gap-sort').value;
+  const items=data.items.filter(item=>item.days>=minimum).sort((a,b)=>sort==='date'?b.start.localeCompare(a.start):sort==='length'?b.days-a.days||a.start.localeCompare(b.start):(b.score??-1)-(a.score??-1)||b.days-a.days||a.start.localeCompare(b.start));
+  $('#gap-count').textContent=nf.format(items.length)+'개';
+  $('#gap-longest').textContent=items.length?Math.max(...items.map(item=>item.days))+'일':'—';
+  const comparable=items.filter(item=>item.annual.length),repeated=comparable.filter(item=>item.annual.some(entry=>entry.repeated));
+  $('#gap-repeat').textContent=comparable.length?`${repeated.length} / ${comparable.length}`:'비교 불가';
+  $('#gap-repeat').title='반복된 구간 / 연속 연도 비교가 가능한 구간';
+  $('#gap-range').textContent=`${state.analysis.config.start.replaceAll('-','.')} – ${state.analysis.config.end.replaceAll('-','.')}`;
+  const unit=state.analysis.config.unit==='albums'?'묶음':'건';
+  const average=value=>value.average==null?`<span class="muted" title="7일 중 ${value.observed_days}일 확인">—</span>`:`<b>${value.average.toFixed(1)}</b><span class="gap-unit">${unit}/일</span><small>${value.active_days}/7일 게시</small>`;
+  $('#gap-rows').innerHTML=items.map(item=>{
+    const annual=item.annual.length?item.annual.map(entry=>`${entry.start.slice(0,4)}년 ${entry.repeated?entry.overlap_days+'일 겹침':'반복 없음'}`).join('<br>'):'<span class="muted">비교 불가</span>';
+    return `<tr><td data-label="공백 기간"><button type="button" class="gap-period" data-gap="${esc(item.start)}" aria-label="${esc(item.start)}부터 ${esc(item.end)} 전후 추이">${esc(gapLabel(item))}<span>전후 추이 ↗</span></button>${item.complete?'':'<small>경계 미확인</small>'}</td><td data-label="연속 일수"><b class="gap-days">${item.days}</b>일</td><td data-label="이전 7일 평균">${average(item.before)}</td><td data-label="이후 7일 평균">${average(item.after)}</td><td data-label="연속 연도 반복">${annual}</td><td data-label="특이도">${item.score==null?'<span class="muted">—</span>':`<span class="gap-score" title="Isolation Forest 상대 점수 · 확률 아님">${item.score.toFixed(1)}</span>`}</td></tr>`;
+  }).join('');
+  $('#gap-empty').hidden=items.length>0;$('.gap-table').hidden=items.length===0;
+  const model=data.model;
+  $('#gap-model-note').textContent=`${model.method} · 학습 가능한 공백 ${model.samples}개. 공백 길이, 전후 7일 평균, 연속 연도 겹침 비율과 비교 가능 여부를 사용합니다. `+(model.status==='ready'?'모든 길이의 완료된 공백으로 학습하며 점수가 높을수록 다른 공백과 패턴이 다릅니다.':model.status==='insufficient_samples'?`학습 가능한 공백 ${model.minimum_samples}개가 필요해 점수를 표시하지 않습니다.`:'서로 다른 패턴이 부족해 점수를 표시하지 않습니다.');
+}
+function showGap(start){
+  const gap=state.analysis?.gaps.items.find(item=>item.start===start);if(!gap)return;
+  const shift=(value,days)=>new Date(new Date(value+'T12:00:00Z').getTime()+days*86400000).toISOString().slice(0,10);
+  const daily=state.analysis.daily.filter(row=>row.date>=shift(gap.start,-7)&&row.date<=shift(gap.end,7));
+  $('#gap-dialog-title').textContent=`${gapLabel(gap)} · ${gap.days}일`;
+  $('#gap-dialog').showModal();
+  plot('gap-chart',[{x:daily.map(row=>row.date),y:daily.map(row=>row.status==='observed'||row.count?row.count:null),type:'bar',marker:{color:'#6487ed'},hovertemplate:'%{x|%Y.%m.%d}<br>%{y}'+(state.analysis.config.unit==='albums'?'묶음':'건')+'<extra></extra>'}],{margin:{t:28,r:12,b:48,l:36},bargap:.25,xaxis:{...plotBase.xaxis,type:'date',nticks:5,tickformat:'%m.%d'},shapes:[{type:'rect',xref:'x',yref:'paper',x0:gap.start,x1:shift(gap.end,1),y0:0,y1:1,fillcolor:'#f6e7d9',opacity:.5,line:{width:0},layer:'below'}],annotations:[{text:'게시 기록 공백',xref:'x',yref:'paper',x:gap.start,y:1.08,showarrow:false,xanchor:'left',font:{size:11,color:'#a17754'}}]});
+}
 function setMenu(open){
   $('#sidebar').classList.toggle('open',open);$('#menu-backdrop').hidden=!open;
   $('#menu-toggle').setAttribute('aria-expanded',String(open));document.body.classList.toggle('menu-open',open);
@@ -197,10 +226,10 @@ function navigate(page){
   if(siteMode&&page==='settings')page='quality';
   state.page=names[page]?page:'dashboard';
   const hasChat=!!state.workspace?.chats.length;
-  $$('.page-panel').forEach(panel=>panel.hidden=panel.id!=='page-'+state.page||(!hasChat&&['dashboard','records','comparison','reports'].includes(state.page)));
+  $$('.page-panel').forEach(panel=>panel.hidden=panel.id!=='page-'+state.page||(!hasChat&&['dashboard','gaps','records','comparison','reports'].includes(state.page)));
   $$('.nav-link').forEach(link=>{const active=link.dataset.page===state.page;link.classList.toggle('active',active);if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current')});
   $('#breadcrumb-page').textContent=names[state.page];$('#page-title').textContent=names[state.page];
-  $('#filter-section').hidden=!hasChat||!['dashboard','records','comparison'].includes(state.page);
+  $('#filter-section').hidden=!hasChat||!['dashboard','gaps','records','comparison'].includes(state.page);
   $('#quality-strip').hidden=siteMode||!hasChat||state.page==='settings';
   $('#empty-state').hidden=hasChat||['settings','quality'].includes(state.page);
   $('#header-export').disabled=!state.analysis;
@@ -209,6 +238,7 @@ function navigate(page){
   if(state.page==='quality')refreshQuality().catch(e=>toast(e.message,'error'));
   if(state.page==='settings')loadSettings().catch(e=>toast(e.message,'error'));
   if(state.page==='reports')renderReport();
+  if(state.page==='gaps')renderGaps();
   if(state.page==='comparison')renderComparison();
   if(state.page==='dashboard')setTimeout(resizeCharts,50);
 }
@@ -331,6 +361,8 @@ function startPolling(id){
 $('#workspace-select').addEventListener('change',event=>selectWorkspace(event.target.value).catch(error=>toast(error.message,'error')));
 $('#filters').addEventListener('submit',event=>{event.preventDefault();if(!state.applying)applyFilters()});
 $('#filters').addEventListener('input',dirty);$('#filters').addEventListener('change',dirty);
+$('#gap-minimum').onchange=renderGaps;$('#gap-sort').onchange=renderGaps;
+$('#gap-rows').onclick=event=>{const button=event.target.closest('[data-gap]');if(button)showGap(button.dataset.gap)};
 $('#chat-select').addEventListener('change',()=>{fillSenders();setPeriod('all');dirty()});
 $('#timezone-select').addEventListener('change',dirty);
 $('#reset-filters').onclick=resetFilters;

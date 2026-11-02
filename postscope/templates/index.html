@@ -25,6 +25,7 @@
   <label class="workspace-picker"><span class="workspace-avatar">P</span><select id="workspace-select" aria-label="작업공간 선택"></select></label>
   <nav aria-label="주 메뉴">
     <a href="#dashboard" data-page="dashboard" class="nav-link active"><svg><use href="#i-grid"/></svg>대시보드</a>
+    <a href="#gaps" data-page="gaps" class="nav-link"><svg><use href="#i-calendar"/></svg>공백 분석</a>
     <a href="#records" data-page="records" class="nav-link"><svg><use href="#i-file"/></svg>게시 기록<span id="record-badge" class="nav-count">0</span></a>
     <a href="#comparison" data-page="comparison" class="nav-link"><svg><use href="#i-compare"/></svg>기간 비교</a>
     <div class="nav-divider"></div>
@@ -95,6 +96,12 @@
         </details>
       </div>
     </section>
+    <section id="page-gaps" class="page-panel" hidden>
+      <div class="gap-toolbar"><span id="gap-range" class="small muted"></span><div><select id="gap-minimum" aria-label="최소 공백 길이"><option value="2">2일 이상</option><option value="1">모든 공백</option><option value="3">3일 이상</option><option value="7">7일 이상</option></select><select id="gap-sort" aria-label="공백 정렬"><option value="score">특이도순</option><option value="length">긴 공백순</option><option value="date">최신순</option></select></div></div>
+      <div class="gap-metrics"><article class="card"><span>공백 구간</span><b id="gap-count">—</b></article><article class="card"><span>가장 긴 공백</span><b id="gap-longest">—</b></article><article class="card"><span>연속 연도 반복</span><b id="gap-repeat">—</b></article></div>
+      <article class="card gap-results"><table class="gap-table"><caption class="visually-hidden">게시 기록 공백과 전후 7일 평균</caption><thead><tr><th>공백 기간</th><th>연속 일수</th><th>이전 7일 평균</th><th>이후 7일 평균</th><th>연속 연도 반복</th><th>특이도</th></tr></thead><tbody id="gap-rows"></tbody></table><div id="gap-empty" class="gap-empty" hidden>조건에 맞는 공백이 없습니다.</div></article>
+      <details class="context-help gap-help"><summary>분석 기준</summary><p>선택한 조건에서 하루 전체를 조회했고 게시물이 0건인 날만 공백으로 집계합니다. 삭제된 게시물은 확인할 수 없습니다. 평균은 공백 직전·직후 7일(게시물 0건인 날 포함) 기준이며, 7일이 모두 확인되지 않으면 표시하지 않습니다. 구간을 누르면 전후 추이를 볼 수 있습니다.</p><p>연속 연도 반복은 전년·다음 해 같은 월·일에 공백이 겹치는지 비교합니다. 2일 이상 공백은 적어도 2일이 겹쳐야 반복으로 표시합니다. 비교 날짜를 전부 조회하지 못했으면 ‘비교 불가’입니다.</p><p id="gap-model-note"></p><p>특이도는 사후 비교 점수이며 발생 확률이나 원인에 대한 근거가 아닙니다.</p></details>
+    </section>
     <section id="page-records" class="page-panel" hidden><article class="card"><div class="card-heading padded"><h3>게시 기록</h3><span id="records-total" class="badge"></span></div><div class="table-scroll"><table class="records-table"><thead><tr><th>메시지 ID</th><th>작성자</th><th>게시 시각</th><th>유형</th><th>구성 메시지</th><th>전달</th></tr></thead><tbody id="records-body"></tbody></table></div><div class="pagination"><button class="button" id="records-prev">← 이전</button><span id="records-position"></span><button class="button" id="records-next">다음 →</button></div></article></section>
     <section id="page-comparison" class="page-panel" hidden><article class="card padded"><div class="card-heading"><h3>기준 기간</h3><span class="small muted" id="comparison-current"></span></div><form id="comparison-form" class="comparison-form"><label class="field">시작일<input type="date" id="compare-start" required></label><label class="field">종료일<input type="date" id="compare-end" required></label><button class="button primary">비교</button><button type="button" class="button" id="compare-clear">해제</button></form><div id="comparison-result" class="comparison-result"></div></article></section>
     <section id="page-quality" class="page-panel" hidden><article class="card padded"><div class="card-heading"><h3>관측 범위</h3><span id="quality-badge" class="badge"></span></div><div id="quality-details"></div><details class="context-help"><summary>집계 기준</summary><p>확인되지 않은 구간은 0건으로 보지 않습니다. 작성자 ID가 없는 이름·서명은 같은 계정으로 합치지 않습니다. 앨범 경계를 확인할 수 없으면 묶음 통계에서 제외합니다.</p></details><h3 class="subsection-title">가져오기·수집</h3><div id="jobs-list"></div><h3 class="subsection-title">제외한 행 <span class="small muted">최대 200건</span></h3><div id="quarantine-list" class="table-scroll"></div></article></section>
@@ -107,6 +114,7 @@
     <section id="page-settings" class="page-panel" hidden><article class="card padded"><h3>데이터 보존</h3><form id="settings-form" class="settings-form"><label class="field">마지막 확인 후 보존 기간<input type="number" id="retention-days" min="1" max="3650" value="90" required></label><span class="muted">일</span><button class="button primary">저장</button></form><p class="small muted">기간을 줄이면 기존 기록이 삭제될 수 있습니다.</p><hr><h3>계정 연결</h3><div id="connection-status"></div><button class="button" id="connect-settings">텔레그램 연결</button><hr><h3>작업공간 삭제</h3><p class="muted">기록·분석·보고서를 함께 삭제합니다.</p><button class="button danger" id="delete-workspace">삭제</button></article></section>
   </main>
 </div>
+<dialog id="gap-dialog" aria-labelledby="gap-dialog-title"><div class="dialog-heading"><h2 id="gap-dialog-title">공백 전후 추이</h2><button class="icon-button close-dialog" aria-label="닫기">×</button></div><div id="gap-chart" class="plot" aria-label="공백 전후 7일 게시량"></div></dialog>
 <dialog id="import-dialog" aria-labelledby="import-title">
   <div class="dialog-heading"><h2 id="import-title">데이터 가져오기</h2><button class="icon-button close-dialog" aria-label="닫기">×</button></div>
   <div class="dialog-tabs" role="tablist" aria-label="가져오기 방법"><button class="selected" data-import-tab="json" role="tab" aria-selected="true">JSON 파일</button><button data-import-tab="api" role="tab" aria-selected="false">텔레그램 API</button></div>

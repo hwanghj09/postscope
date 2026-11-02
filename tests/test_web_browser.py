@@ -82,6 +82,8 @@ def test_static_filters_use_same_engine_and_export_offline_report(static_page,tm
     store=Store(tmp_path)
     expected=run_analysis(store,{**data['analysis']['config'],'content':'photo'})
     expect(page.locator('#metric-total')).to_have_text(f"{expected['metrics']['total']:,}건",timeout=120000)
+    page.locator('[data-page="gaps"]').click()
+    expect(page.locator('#gap-count')).to_have_text(f"{sum(g['days']>=2 for g in expected['gaps']['items']):,}개")
     assert page.workers
     page.locator('#header-export').click()
     with page.expect_download(timeout=120000) as download:
@@ -90,6 +92,7 @@ def test_static_filters_use_same_engine_and_export_offline_report(static_page,tm
     html=report.read_text(encoding='utf-8')
     assert '<script src=' not in html
     assert data['workspace']['chats'][0]['title'] in html
+    assert '공백 분석' in html and 'Isolation Forest' in html
     expect(page.locator('[data-export="html"] h3')).to_have_text('분석 보고서')
 
 
@@ -124,3 +127,27 @@ def test_history_is_optional_and_settings_fit_mobile(static_page):
     expect(page.locator('#metric-total')).to_have_text(f"{data['analysis']['metrics']['total']:,}건",timeout=120000)
     page.locator('#advanced-filters summary').click()
     expect(page.locator('#filter-start')).to_be_hidden()
+
+
+def test_gap_table_chart_and_mobile_cards_need_no_worker(static_page):
+    page,network,data=static_page
+    if not data['analysis']:pytest.skip('Actual Telegram source has not produced a snapshot yet')
+    page.locator('[data-page="gaps"]').click()
+    expected=data['analysis']['gaps']
+    expect(page.locator('#gap-rows tr')).to_have_count(expected['summary']['multi_day'])
+    page.locator('#gap-minimum').select_option('1')
+    expect(page.locator('#gap-rows tr')).to_have_count(expected['summary']['total'])
+    page.locator('#gap-sort').select_option('length')
+    if expected['items']:
+        expect(page.locator('#gap-rows tr').first.locator('.gap-days')).to_have_text(str(expected['summary']['longest_days']))
+        page.locator('[data-gap]').first.click()
+        expect(page.locator('#gap-dialog')).to_be_visible()
+        expect(page.locator('#gap-chart .barlayer')).to_be_attached()
+        page.keyboard.press('Escape')
+        expect(page.locator('#gap-dialog')).not_to_be_visible()
+    page.set_viewport_size({'width':360,'height':800})
+    assert page.evaluate('document.body.scrollWidth')==360
+    if expected['items']:
+        page.locator('[data-gap]').first.click()
+        assert page.evaluate('document.body.scrollWidth')==360
+    assert not page.workers

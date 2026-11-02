@@ -58,7 +58,7 @@ def get_plotlyjs():return (ROOT/'static'/'plotly.min.js').read_text()
 '''+ '\n\n'.join(functions)
     with zipfile.ZipFile(OUTPUT/'engine.zip','w',zipfile.ZIP_DEFLATED) as bundle:
         for name in ['ijson','jinja2','markupsafe','tzdata']:add_package(bundle,name)
-        for name in ['__init__.py','storage.py','demo.py','browser_engine.py','adapters/__init__.py','adapters/desktop_json.py','services/__init__.py','services/analysis.py','services/normalizer.py','templates/report.html','assets/NanumGothic-Regular.ttf','static/plotly.min.js']:
+        for name in ['__init__.py','storage.py','demo.py','browser_engine.py','adapters/__init__.py','adapters/desktop_json.py','services/__init__.py','services/analysis.py','services/gaps.py','services/normalizer.py','templates/report.html','assets/NanumGothic-Regular.ttf','static/plotly.min.js']:
             bundle.write(ROOT/'postscope'/name,'postscope/'+name)
         bundle.writestr('postscope/services/browser_reports.py',browser_reports)
     with tempfile.TemporaryDirectory() as directory:

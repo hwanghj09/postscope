@@ -72,6 +72,8 @@ def test_csv_totals_bom_config_and_no_secrets(client,workspace,sample):
         assert config['snapshot_id']==analysis['snapshot_id']
         assert config['config']['chat_key']==sample['name']
         assert 'workspace_id' not in config['config']
+        assert archive.read('gaps.csv').startswith(b'\xef\xbb\xbf')
+        assert json.loads(archive.read('gap_model.json'))==analysis['gaps']['model']
 
 
 def test_csv_formula_sanitized():

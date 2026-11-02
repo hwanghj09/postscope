@@ -6,8 +6,9 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 from ..storage import now, uid
+from .gaps import analyze_gaps
 
-ALGORITHM = "postscope-1.0.0"
+ALGORITHM = "postscope-1.1.0"
 UTC = timezone.utc
 WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"]
 
@@ -174,7 +175,7 @@ def calculate(messages, windows_raw, config, album_supported=True):
               "normalized_counts": covered_heat,
               "types": dict(types), "intervals": intervals, "interval_histogram": histogram, "sessions": sessions,
               "incomplete_albums": incomplete, "small_sample": n<30 or observed_hours<14*24,
-              "insight": None}
+              "insight": None, "gaps": analyze_gaps(daily)}
     session_lengths=[s["seconds"] for s in sessions]
     result["session_length_histogram"]=[sum(1 for s in session_lengths if a<=s<b) for a,b in ((0,1),(1,300),(300,600),(600,1800),(1800,3600),(3600,float('inf')))]
     if n:

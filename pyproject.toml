@@ -1,0 +1,24 @@
+[project]
+name = "postscope"
+version = "1.0.0"
+description = "Local-first Telegram posting metadata analytics"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.121.3",
+  "uvicorn==0.38.0",
+  "jinja2==3.1.6",
+  "python-multipart==0.0.22",
+  "telethon==1.42.0",
+  "ijson==3.4.0.post0",
+  "plotly==6.5.0",
+  "matplotlib==3.10.7",
+  "tzdata==2025.2",
+  "python-socks[asyncio]==2.7.3",
+]
+
+[dependency-groups]
+dev = ["pytest==9.0.1", "httpx==0.28.1", "playwright==1.56.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

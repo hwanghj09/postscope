@@ -1,0 +1,44 @@
+{
+  "id": 100,
+  "name": "PostScope 검증 샘플",
+  "type": "private_supergroup",
+  "messages": [
+    {
+      "id": 1,
+      "date": "2026-11-01T14:59:00Z",
+      "from_id": "user1",
+      "text": ""
+    },
+    {
+      "id": 2,
+      "date": "2026-11-01T15:00:00Z",
+      "from_id": "user1",
+      "text": "",
+      "file": "not-downloaded.pdf",
+      "mime_type": "application/pdf",
+      "grouped_id": "G1"
+    },
+    {
+      "id": 3,
+      "date": "2026-11-01T15:00:30Z",
+      "from_id": "user1",
+      "text": "",
+      "file": "not-downloaded.pdf",
+      "mime_type": "application/pdf",
+      "grouped_id": "G1"
+    },
+    {
+      "id": 4,
+      "date": "2026-11-02T03:00:00Z",
+      "from_id": "user1",
+      "text": ""
+    },
+    {
+      "id": 5,
+      "date": "2026-11-02T15:00:00Z",
+      "from_id": "user1",
+      "text": "",
+      "photo": true
+    }
+  ]
+}

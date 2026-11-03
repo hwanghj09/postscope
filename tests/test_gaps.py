@@ -86,3 +86,20 @@ def test_model_is_fitted_to_completed_gaps_with_full_context_only():
     assert result['model']['samples']==25
     assert all(gap['score'] is not None for gap in result['items'])
     json.dumps(result,allow_nan=False)
+
+
+def test_low_activity_keeps_original_baseline_during_long_slowdown():
+    result=analyze_gaps(days('2025-01-01',[100]*28+[10]*35+[100]),low_ratio=.2)
+    assert len(result['items'])==1
+    gap=result['items'][0]
+    assert gap['days']==35 and gap['baseline']==100 and gap['total']==350
+    assert gap['complete']
+
+
+def test_low_activity_excludes_missing_days_and_zero_baselines():
+    rows=days('2025-01-01',[100]*28+[10,10,10,100])
+    rows[29]['status']='partial'
+    result=analyze_gaps(rows,low_ratio=.2)
+    assert [g['days'] for g in result['items']]==[1]
+    assert not result['items'][0]['complete']
+    assert analyze_gaps(days('2025-01-01',[0]*40),low_ratio=.2)['items']==[]

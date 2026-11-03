@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from ..storage import now, uid
 from .gaps import analyze_gaps
 
-ALGORITHM = "postscope-1.1.0"
+ALGORITHM = "postscope-1.2.0"
 UTC = timezone.utc
 WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"]
 
@@ -116,6 +116,13 @@ def calculate(messages, windows_raw, config, album_supported=True):
         if any(a<=stamp<b for a,b in windows):
             covered_heat[local.weekday()][local.hour] += 1
         types[m["content_kind"] if len(m["content_kinds"])==1 else "mixed"] += 1
+    complete_heat = [[0]*24 for _ in range(7)]
+    for message in selected:
+        local = datetime.fromisoformat(message["sent_at_utc"]).astimezone(tz)
+        key = local.date().isoformat()
+        a,b = date_bounds(key,key,config["timezone"])
+        if abs(day_exposure.get(key,0)-(b-a).total_seconds()/3600)<1e-6:
+            complete_heat[local.weekday()][local.hour] += 1
     daily, occurrences = [], [0]*7
     cursor = date.fromisoformat(config["start"])
     last = date.fromisoformat(config["end"])
@@ -170,12 +177,12 @@ def calculate(messages, windows_raw, config, album_supported=True):
         histogram[slot] += 1
     result = {"metrics": metrics, "daily": daily, "weekday": weekday, "weekday_occurrences": occurrences,
               "weekday_average": [weekday[i]/occurrences[i] if full_coverage and occurrences[i] else None for i in range(7)],
-              "hours": hours, "heatmap": heat, "exposure": cell_exposure,
+              "weekday_hour_complete": complete_heat, "hours": hours, "heatmap": heat, "exposure": cell_exposure,
               "rates": [[covered_heat[w][h]/cell_exposure[w][h] if cell_exposure[w][h] else None for h in range(24)] for w in range(7)],
               "normalized_counts": covered_heat,
               "types": dict(types), "intervals": intervals, "interval_histogram": histogram, "sessions": sessions,
               "incomplete_albums": incomplete, "small_sample": n<30 or observed_hours<14*24,
-              "insight": None, "gaps": analyze_gaps(daily)}
+              "insight": None, "gaps": analyze_gaps(daily), "low_activity": analyze_gaps(daily, low_ratio=.2)}
     session_lengths=[s["seconds"] for s in sessions]
     result["session_length_histogram"]=[sum(1 for s in session_lengths if a<=s<b) for a,b in ((0,1),(1,300),(300,600),(600,1800),(1800,3600),(3600,float('inf')))]
     if n:

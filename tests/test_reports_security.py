@@ -74,6 +74,10 @@ def test_csv_totals_bom_config_and_no_secrets(client,workspace,sample):
         assert 'workspace_id' not in config['config']
         assert archive.read('gaps.csv').startswith(b'\xef\xbb\xbf')
         assert json.loads(archive.read('gap_model.json'))==analysis['gaps']['model']
+        assert 'low_activity.csv' in archive.namelist()
+        assert json.loads(archive.read('low_activity_model.json'))==analysis['low_activity']['model']
+        comparison=list(csv.reader(io.StringIO(archive.read('weekday_weekend.csv').decode('utf-8-sig'))))
+        assert len(comparison)==49
 
 
 def test_csv_formula_sanitized():

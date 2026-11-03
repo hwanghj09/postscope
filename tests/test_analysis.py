@@ -119,3 +119,15 @@ def test_fractional_timezone():
     matrix,daily=exposure([(a,b)],__import__('zoneinfo').ZoneInfo('Asia/Kathmandu'))
     assert daily['2026-11-02']==24
     assert matrix[0]==[1]*24
+
+
+def test_weekday_weekend_means_exclude_partial_days_from_numerator_and_denominator():
+    messages=[normalize({'id':1,'date':'2026-11-02T00:30:00Z','text':'x'})[0],
+              normalize({'id':2,'date':'2026-11-07T00:30:00Z','text':'x'})[0]]
+    windows=[{'start_utc':'2026-11-02T00:00:00+00:00','end_utc':'2026-11-03T00:00:00+00:00'},
+             {'start_utc':'2026-11-07T00:00:00+00:00','end_utc':'2026-11-07T01:00:00+00:00'}]
+    result,_=calculate(messages,windows,{'start':'2026-11-02','end':'2026-11-07','timezone':'UTC'})
+    assert result['weekday_occurrences']==[1,0,0,0,0,0,0]
+    assert result['weekday_hour_complete'][0][0]==1
+    assert result['weekday_hour_complete'][5][0]==0
+    assert result['heatmap'][5][0]==1

@@ -50,23 +50,40 @@ def isolation_scores(vectors, trees=96, seed=1729):
             for row in vectors]
 
 
-def analyze_gaps(daily):
+def analyze_gaps(daily, low_ratio=None):
     """Count zero-post days only when the entire local day was queried."""
     by_date = {row['date']: row for row in daily}
+    low = {}
+    baseline = None
+    for i, row in enumerate(daily):
+        if low_ratio is None:
+            continue
+        if baseline is None:
+            context = daily[max(0, i-28):i]
+            if len(context) == 28 and all(day['status'] == 'observed' for day in context):
+                baseline = sum(day['count'] for day in context)/28
+        if baseline and row['status'] == 'observed' and row['count'] <= baseline*low_ratio:
+            low[row['date']] = baseline
+        else:
+            baseline = None
+    def is_gap(row):
+        return row['status'] == 'observed' and (row['date'] in low if low_ratio is not None else row['count'] == 0)
     items = []
     index = 0
     while index < len(daily):
         row = daily[index]
-        if row['count'] or row['status'] != 'observed':
+        if not is_gap(row):
             index += 1
             continue
         first = index
-        while index+1 < len(daily) and daily[index+1]['count'] == 0 and daily[index+1]['status'] == 'observed':
+        while index+1 < len(daily) and is_gap(daily[index+1]):
             index += 1
         last = index
-        bounded_left = first > 0 and daily[first-1]['count'] > 0
-        bounded_right = last+1 < len(daily) and daily[last+1]['count'] > 0
+        bounded_left = first > 0 and (daily[first-1]['status'] == 'observed' and not is_gap(daily[first-1]) if low_ratio is not None else daily[first-1]['count'] > 0)
+        bounded_right = last+1 < len(daily) and (daily[last+1]['status'] == 'observed' and not is_gap(daily[last+1]) if low_ratio is not None else daily[last+1]['count'] > 0)
         items.append({'start': daily[first]['date'], 'end': daily[last]['date'], 'days': last-first+1,
+                      'baseline': low.get(daily[first]['date']),
+                      'total': sum(day['count'] for day in daily[first:last+1]),
                       'complete': bounded_left and bounded_right,
                       'before': _average(daily[max(0, first-7):first]),
                       'after': _average(daily[last+1:last+8]),
@@ -104,7 +121,7 @@ def analyze_gaps(daily):
         if scores is not None:
             for item, score in zip(eligible, scores):
                 item['score'] = score
-    return {'items': items, 'model': model,
+    return {'items': items, 'model': model, 'low_ratio': low_ratio, 'baseline_days': 28,
             'summary': {'total': len(items), 'multi_day': sum(item['days'] >= 2 for item in items),
                         'longest_days': max((item['days'] for item in items), default=0),
                         'unknown_days': sum(row['status'] != 'observed' for row in daily)}}

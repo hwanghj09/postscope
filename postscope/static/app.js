@@ -158,6 +158,14 @@ function renderDashboard(){
   plot('types-chart',[{x:Object.keys(d.types).map(t=>types[t]||(t==='mixed'?'복합 유형':t)),y:Object.values(d.types),type:'bar',marker:{color:'#87a6f1',cornerradius:4},hovertemplate:'%{x}<br>%{y}건<extra></extra>'}]);
   plot('sessions-chart',[{x:['0초','5분 미만','5~10분','10~30분','30~60분','1시간 이상'],y:d.session_length_histogram||[0,0,0,0,0,0],type:'bar',marker:{color:'#a59bdc',cornerradius:4},hovertemplate:'%{x}<br>%{y}묶음<extra></extra>'}]);
   $('#sessions-caption').textContent=`인접 간격 ${d.config.session_minutes}분 이하`;
+  const groups=[{name:'평일',days:[0,1,2,3,4],color:'#6284ed'},{name:'주말',days:[5,6],color:'#41afaa'}];
+  const compareHours=Array.from({length:24},(_,i)=>(i+5)%24);
+  const hourlyGroups=groups.map(group=>{
+    const denominator=group.days.reduce((sum,w)=>sum+d.weekday_occurrences[w],0);
+    const values=compareHours.map(h=>denominator?group.days.reduce((sum,w)=>sum+d.weekday_hour_complete[w][h],0)/denominator:null);
+    return {x:compareHours.map(h=>String(h).padStart(2,'0')),y:values,type:'scatter',mode:'lines+markers',name:group.name,line:{color:group.color,width:2},marker:{size:4},hovertemplate:group.name+' %{x}시<br>%{y:.2f}'+unit+'/일<extra></extra>'};
+  });
+  plot('weekday-weekend-chart',hourlyGroups,{showlegend:true,legend:{orientation:'h',x:0,y:1.2},xaxis:{...plotBase.xaxis,type:'category',categoryorder:'array',categoryarray:compareHours.map(h=>String(h).padStart(2,'0')),tickmode:'array',tickvals:compareHours.filter((_,i)=>i%3===0||i===23).map(h=>String(h).padStart(2,'0'))},yaxis:{...plotBase.yaxis,title:{text:unit+'/일',font:{size:10}}},margin:{t:30,r:12,b:30,l:48}});
   renderHeat();
   setTimeout(resizeCharts,100);
 }
@@ -165,32 +173,35 @@ function renderWeekday(){const d=state.analysis;if(!d)return;$('#weekday-mode op
 function renderHeat(){
   const d=state.analysis;if(!d)return;
   if(state.heat==='rate'&&d.metrics.observed_hours===0)state.heat='count';
-  const rate=state.heat==='rate',cells=rate?d.rates:d.heatmap;
+  const rate=state.heat==='rate',source=rate?d.rates:d.heatmap;
+  const cells=source.map((row,w)=>row.map((value,h)=>source[(w+(h<5?1:0))%7][h]));
+  const heatExposure=d.exposure.map((row,w)=>row.map((value,h)=>d.exposure[(w+(h<5?1:0))%7][h]));
   const maximum=Math.max(1,...cells.flat().filter(v=>v!=null));
   $$('[data-heat]').forEach(button=>{
     const selected=button.dataset.heat==='table'?state.heatTable:button.dataset.heat===state.heat;
     button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));
     if(button.dataset.heat==='rate'){button.disabled=d.metrics.observed_hours===0;button.title=button.disabled?'조회 범위가 확인되어야 계산할 수 있습니다.':''}
   });
-  let html='<span></span>'+Array.from({length:24},(_,h)=>`<span class="heat-label">${h%3===0?String(h).padStart(2,'0'):''}</span>`).join('');
+  const heatHours=Array.from({length:24},(_,i)=>(i+5)%24);
+  let html='<span></span>'+heatHours.map((h,i)=>`<span class="heat-label">${i%3===0||i===23?String(h).padStart(2,'0'):''}</span>`).join('');
   for(let w=0;w<7;w++){
     html+=`<span class="heat-label">${['월','화','수','목','금','토','일'][w]}</span>`;
-    for(let h=0;h<24;h++){
-      const value=cells[w][h],known=d.exposure[w][h]>0,intensity=value==null?0:value/maximum;
+    for(const h of heatHours){
+      const value=cells[w][h],known=heatExposure[w][h]>0,intensity=value==null?0:value/maximum;
       const color=`hsl(223 ${Math.round(60+intensity*16)}% ${Math.round(96-intensity*41)}%)`;
-      const label=`${['월','화','수','목','금','토','일'][w]} ${h}–${h+1}시 · ${d.config.timezone} · ${value==null?'계산 불가':fmt(value)+(rate?'건/시간':'건')} · 관측 ${fmt(d.exposure[w][h])}시간${!known?' · 범위 미확인':''}`;
+      const label=`${['월','화','수','목','금','토','일'][w]} 기준 · ${['월','화','수','목','금','토','일'][(w+(h<5?1:0))%7]} ${h}–${h+1}시 · ${d.config.timezone} · ${value==null?'계산 불가':fmt(value)+(rate?'건/시간':'건')} · 관측 ${fmt(heatExposure[w][h])}시간${!known?' · 범위 미확인':''}`;
       html+=`<button type="button" class="heat-cell ${known?'':'unknown'}" style="background-color:${color}" data-label="${esc(label)}" aria-label="${esc(label)}" title="${esc(label)}"></button>`;
     }
   }
   $('#heatmap').innerHTML=html;$('#heat-scroll').hidden=state.heatTable;$('#heat-table').hidden=!state.heatTable;
   $('#heat-subtitle').hidden=siteMode||d.metrics.full_coverage;$('#heat-subtitle').textContent=rate?'확인된 관측 시간으로 계산합니다.':'사선: 조회 범위 미확인';
   $('#heatmap').setAttribute('aria-description',d.metrics.full_coverage?'':'사선: 조회 범위 미확인');
-  if(state.heatTable)$('#heat-table').innerHTML='<table><caption>'+esc(rate?'시간당 게시율 (건/시간)':'관측 게시량 (건)')+'</caption><thead><tr><th>요일 / 시</th>'+Array.from({length:24},(_,h)=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+cells.map((row,w)=>`<tr><th>${['월','화','수','목','금','토','일'][w]}</th>${row.map((value,h)=>`<td>${value==null?'—':fmt(value)}${!rate&&!d.exposure[w][h]?' *':''}</td>`).join('')}</tr>`).join('')+'</tbody></table>';
+  if(state.heatTable)$('#heat-table').innerHTML='<table><caption>'+esc(rate?'시간당 게시율 (건/시간)':'관측 게시량 (건)')+'</caption><thead><tr><th>요일 / 시</th>'+heatHours.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+cells.map((row,w)=>`<tr><th>${['월','화','수','목','금','토','일'][w]}</th>${heatHours.map(h=>{const value=row[h];return `<td>${value==null?'—':fmt(value)}${!rate&&!heatExposure[w][h]?' *':''}</td>`}).join('')}</tr>`).join('')+'</tbody></table>';
 }
 function resizeCharts(){$$('.plot').filter(x=>x.offsetParent&&x.data).forEach(x=>Plotly.Plots.resize(x))}
 function gapLabel(gap){const start=gap.start.replaceAll('-','.');return gap.start===gap.end?start:`${start} – ${(gap.start.slice(0,4)===gap.end.slice(0,4)?gap.end.slice(5):gap.end).replaceAll('-','.')}`}
 function renderGaps(){
-  const data=state.analysis?.gaps;if(!data)return;
+  const data=state.analysis?.[$('#gap-mode').value];if(!data)return;
   const minimum=Number($('#gap-minimum').value),sort=$('#gap-sort').value;
   const items=data.items.filter(item=>item.days>=minimum).sort((a,b)=>sort==='date'?b.start.localeCompare(a.start):sort==='length'?b.days-a.days||a.start.localeCompare(b.start):(b.score??-1)-(a.score??-1)||b.days-a.days||a.start.localeCompare(b.start));
   $('#gap-count').textContent=nf.format(items.length)+'개';
@@ -203,19 +214,19 @@ function renderGaps(){
   const average=value=>value.average==null?`<span class="muted" title="7일 중 ${value.observed_days}일 확인">—</span>`:`<b>${value.average.toFixed(1)}</b><span class="gap-unit">${unit}/일</span><small>${value.active_days}/7일 게시</small>`;
   $('#gap-rows').innerHTML=items.map(item=>{
     const annual=item.annual.length?item.annual.map(entry=>`${entry.start.slice(0,4)}년 ${entry.repeated?entry.overlap_days+'일 겹침':'반복 없음'}`).join('<br>'):'<span class="muted">비교 불가</span>';
-    return `<tr><td data-label="공백 기간"><button type="button" class="gap-period" data-gap="${esc(item.start)}" aria-label="${esc(item.start)}부터 ${esc(item.end)} 전후 추이">${esc(gapLabel(item))}<span>전후 추이 ↗</span></button>${item.complete?'':'<small>경계 미확인</small>'}</td><td data-label="연속 일수"><b class="gap-days">${item.days}</b>일</td><td data-label="이전 7일 평균">${average(item.before)}</td><td data-label="이후 7일 평균">${average(item.after)}</td><td data-label="연속 연도 반복">${annual}</td><td data-label="특이도">${item.score==null?'<span class="muted">—</span>':`<span class="gap-score" title="Isolation Forest 상대 점수 · 확률 아님">${item.score.toFixed(1)}</span>`}</td></tr>`;
+    return `<tr><td data-label="공백 기간"><button type="button" class="gap-period" data-gap="${esc(item.start)}" aria-label="${esc(item.start)}부터 ${esc(item.end)} 전후 추이">${esc(gapLabel(item))}<span>전후 추이 ↗</span></button>${item.baseline==null?'':`<small>기준 ${item.baseline.toFixed(1)}건/일 · 기간 평균 ${(item.total/item.days).toFixed(1)}건/일</small>`}${item.complete?'':'<small>경계 미확인</small>'}</td><td data-label="연속 일수"><b class="gap-days">${item.days}</b>일</td><td data-label="이전 7일 평균">${average(item.before)}</td><td data-label="이후 7일 평균">${average(item.after)}</td><td data-label="연속 연도 반복">${annual}</td><td data-label="특이도">${item.score==null?'<span class="muted">—</span>':`<span class="gap-score" title="Isolation Forest 상대 점수 · 확률 아님">${item.score.toFixed(1)}</span>`}</td></tr>`;
   }).join('');
   $('#gap-empty').hidden=items.length>0;$('.gap-table').hidden=items.length===0;
   const model=data.model;
   $('#gap-model-note').textContent=`${model.method} · 학습 가능한 공백 ${model.samples}개. 공백 길이, 전후 7일 평균, 연속 연도 겹침 비율과 비교 가능 여부를 사용합니다. `+(model.status==='ready'?'모든 길이의 완료된 공백으로 학습하며 점수가 높을수록 다른 공백과 패턴이 다릅니다.':model.status==='insufficient_samples'?`학습 가능한 공백 ${model.minimum_samples}개가 필요해 점수를 표시하지 않습니다.`:'서로 다른 패턴이 부족해 점수를 표시하지 않습니다.');
 }
 function showGap(start){
-  const gap=state.analysis?.gaps.items.find(item=>item.start===start);if(!gap)return;
+  const gap=state.analysis?.[$('#gap-mode').value].items.find(item=>item.start===start);if(!gap)return;
   const shift=(value,days)=>new Date(new Date(value+'T12:00:00Z').getTime()+days*86400000).toISOString().slice(0,10);
   const daily=state.analysis.daily.filter(row=>row.date>=shift(gap.start,-7)&&row.date<=shift(gap.end,7));
   $('#gap-dialog-title').textContent=`${gapLabel(gap)} · ${gap.days}일`;
   $('#gap-dialog').showModal();
-  plot('gap-chart',[{x:daily.map(row=>row.date),y:daily.map(row=>row.status==='observed'||row.count?row.count:null),type:'bar',marker:{color:'#6487ed'},hovertemplate:'%{x|%Y.%m.%d}<br>%{y}'+(state.analysis.config.unit==='albums'?'묶음':'건')+'<extra></extra>'}],{margin:{t:28,r:12,b:48,l:36},bargap:.25,xaxis:{...plotBase.xaxis,type:'date',nticks:5,tickformat:'%m.%d'},shapes:[{type:'rect',xref:'x',yref:'paper',x0:gap.start,x1:shift(gap.end,1),y0:0,y1:1,fillcolor:'#f6e7d9',opacity:.5,line:{width:0},layer:'below'}],annotations:[{text:'게시 기록 공백',xref:'x',yref:'paper',x:gap.start,y:1.08,showarrow:false,xanchor:'left',font:{size:11,color:'#a17754'}}]});
+  plot('gap-chart',[{x:daily.map(row=>row.date),y:daily.map(row=>row.status==='observed'||row.count?row.count:null),type:'bar',marker:{color:'#6487ed'},hovertemplate:'%{x|%Y.%m.%d}<br>%{y}'+(state.analysis.config.unit==='albums'?'묶음':'건')+'<extra></extra>'}],{margin:{t:28,r:12,b:48,l:36},bargap:.25,xaxis:{...plotBase.xaxis,type:'date',nticks:5,tickformat:'%m.%d'},shapes:[{type:'rect',xref:'x',yref:'paper',x0:gap.start,x1:shift(gap.end,1),y0:0,y1:1,fillcolor:'#f6e7d9',opacity:.5,line:{width:0},layer:'below'}],annotations:[{text:$('#gap-mode').value==='low_activity'?'저활동 기간':'게시 기록 공백',xref:'x',yref:'paper',x:gap.start,y:1.08,showarrow:false,xanchor:'left',font:{size:11,color:'#a17754'}}]});
 }
 function setMenu(open){
   $('#sidebar').classList.toggle('open',open);$('#menu-backdrop').hidden=!open;
@@ -361,7 +372,7 @@ function startPolling(id){
 $('#workspace-select').addEventListener('change',event=>selectWorkspace(event.target.value).catch(error=>toast(error.message,'error')));
 $('#filters').addEventListener('submit',event=>{event.preventDefault();if(!state.applying)applyFilters()});
 $('#filters').addEventListener('input',dirty);$('#filters').addEventListener('change',dirty);
-$('#gap-minimum').onchange=renderGaps;$('#gap-sort').onchange=renderGaps;
+$('#gap-mode').onchange=renderGaps;$('#gap-minimum').onchange=renderGaps;$('#gap-sort').onchange=renderGaps;
 $('#gap-rows').onclick=event=>{const button=event.target.closest('[data-gap]');if(button)showGap(button.dataset.gap)};
 $('#chat-select').addEventListener('change',()=>{fillSenders();setPeriod('all');dirty()});
 $('#timezone-select').addEventListener('change',dirty);

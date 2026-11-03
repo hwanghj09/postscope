@@ -83,6 +83,7 @@ def test_static_filters_use_same_engine_and_export_offline_report(static_page,tm
     expected=run_analysis(store,{**data['analysis']['config'],'content':'photo'})
     expect(page.locator('#metric-total')).to_have_text(f"{expected['metrics']['total']:,}건",timeout=120000)
     page.locator('[data-page="gaps"]').click()
+    page.locator('#gap-mode').select_option('gaps')
     expect(page.locator('#gap-count')).to_have_text(f"{sum(g['days']>=2 for g in expected['gaps']['items']):,}개")
     assert page.workers
     page.locator('#header-export').click()
@@ -133,6 +134,7 @@ def test_gap_table_chart_and_mobile_cards_need_no_worker(static_page):
     page,network,data=static_page
     if not data['analysis']:pytest.skip('Actual Telegram source has not produced a snapshot yet')
     page.locator('[data-page="gaps"]').click()
+    page.locator('#gap-mode').select_option('gaps')
     expected=data['analysis']['gaps']
     expect(page.locator('#gap-rows tr')).to_have_count(expected['summary']['multi_day'])
     page.locator('#gap-minimum').select_option('1')
@@ -150,4 +152,26 @@ def test_gap_table_chart_and_mobile_cards_need_no_worker(static_page):
     if expected['items']:
         page.locator('[data-gap]').first.click()
         assert page.evaluate('document.body.scrollWidth')==360
+    assert not page.workers
+
+
+def test_low_activity_and_weekday_weekend_and_shifted_heatmap(static_page):
+    page,network,data=static_page
+    if not data['analysis']:pytest.skip('Actual Telegram source has not produced a snapshot yet')
+    expect(page.locator('.heat-cell').first).to_have_attribute('aria-label',__import__('re').compile(r'월 기준 · 월 5–6시'))
+    expect(page.locator('.heat-cell').nth(23)).to_have_attribute('aria-label',__import__('re').compile(r'월 기준 · 화 4–5시'))
+    traces=page.locator('#weekday-weekend-chart').evaluate('(node)=>node.data')
+    assert [trace['name'] for trace in traces]==['평일','주말']
+    assert traces[0]['x'][0]=='05' and traces[0]['x'][-1]=='04'
+    a=data['analysis']
+    denominator=sum(a['weekday_occurrences'][:5])
+    if denominator:assert traces[0]['y'][0]==pytest.approx(sum(row[5] for row in a['weekday_hour_complete'][:5])/denominator)
+    page.locator('[data-page="gaps"]').click()
+    expect(page.locator('#gap-mode')).to_have_value('low_activity')
+    expect(page.locator('#gap-count')).to_have_text(f"{data['analysis']['low_activity']['summary']['multi_day']}개")
+    page.set_viewport_size({'width':360,'height':800})
+    assert page.evaluate('document.body.scrollWidth')==360
+    if data['analysis']['low_activity']['summary']['multi_day']:
+        page.locator('[data-gap]').first.click()
+        expect(page.locator('#gap-dialog')).to_be_visible()
     assert not page.workers

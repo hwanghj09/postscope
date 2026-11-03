@@ -62,11 +62,11 @@ def png_charts(result):
                 ax.bar(range(24),result["hours"],color="#3162e8",width=.7)
                 title="시간대별 게시 분포"
             else:
-                image=ax.imshow(result["heatmap"],cmap="Blues",aspect="auto")
-                ax.set_xticks(range(24))
+                image=ax.imshow([[result["heatmap"][(w+int((i+5)%24<5))%7][(i+5)%24] for i in range(24)] for w in range(7)],cmap="Blues",aspect="auto")
+                ax.set_xticks(range(24),[str((i+5)%24).zfill(2) for i in range(24)])
                 ax.set_yticks(range(7),["월","화","수","목","금","토","일"])
                 fig.colorbar(image,ax=ax)
-                title="요일 × 시간 관측 게시량"
+                title="요일 × 시간 · 05시–다음날 04시"
             ax.set_title(title+" · "+result["config"]["timezone"],fontproperties=font,pad=22,fontsize=18)
             for text in ax.get_xticklabels()+ax.get_yticklabels():
                 text.set_fontproperties(font)
@@ -108,6 +108,11 @@ def create_report(store,analysis_id,format,include_ids=False):
                 archive.writestr('gaps.csv',csv_bytes([['공백 시작','공백 종료','연속 일수','양쪽 경계 확인','이전 7일 평균','이전 확인 일수','이전 게시 일수','이후 7일 평균','이후 확인 일수','이후 게시 일수','연속 연도 비교','특이도 (확률 아님)'],
                     *[[g['start'],g['end'],g['days'],g['complete'],g['before']['average'],g['before']['observed_days'],g['before']['active_days'],g['after']['average'],g['after']['observed_days'],g['after']['active_days'],json.dumps(g['annual'],ensure_ascii=False),g['score']] for g in result['gaps']['items']]]))
                 archive.writestr('gap_model.json',json.dumps(result['gaps']['model'],ensure_ascii=False,indent=2))
+            if 'weekday_hour_complete' in result:
+                archive.writestr('weekday_weekend.csv',csv_bytes([['구분','시각','조회 완료일 게시량','조회 완료 일수','1일 평균'],*[[label,h,sum(result['weekday_hour_complete'][w][h] for w in days),sum(result['weekday_occurrences'][w] for w in days),sum(result['weekday_hour_complete'][w][h] for w in days)/sum(result['weekday_occurrences'][w] for w in days) if sum(result['weekday_occurrences'][w] for w in days) else None] for label,days in [('평일',range(5)),('주말',range(5,7))] for h in [(i+5)%24 for i in range(24)]]]))
+            if 'low_activity' in result:
+                archive.writestr('low_activity.csv',csv_bytes([['시작일','종료일','연속 일수','기준 평균','기간 평균','이전 7일 평균','이후 7일 평균','연속 연도 비교','양쪽 경계 확인','특이도'],*[[g['start'],g['end'],g['days'],g['baseline'],g['total']/g['days'],g['before']['average'],g['after']['average'],json.dumps(g['annual'],ensure_ascii=False),g['complete'],g['score']] for g in result['low_activity']['items']]]))
+                archive.writestr('low_activity_model.json',json.dumps(result['low_activity']['model'],ensure_ascii=False,indent=2))
             archive.writestr("analysis_config.json",json.dumps({k:result[k] for k in ("config","quality","algorithm","snapshot_id","created_at","comparison","incomplete_albums","include_ids")},ensure_ascii=False,indent=2))
             archive.writestr("README.txt","PostScope 생성 시점 집계 스냅샷입니다. 관측되지 않은 구간은 게시 0건을 의미하지 않습니다. CSV 비율은 반올림 전 원값입니다. 서명은 개인 식별 정보가 아닙니다. 메시지 본문·로그인 비밀값·가명 매핑은 포함하지 않습니다.")
             if format=="zip":

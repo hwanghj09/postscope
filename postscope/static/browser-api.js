@@ -48,14 +48,14 @@ async function chartImages(data,onlyHeatmap=false){
     daily:[{x:days.map(d=>d.date),y:days.map(d=>d.status==='unknown'&&d.count===0?null:d.count),type:'scatter',mode:'lines',line:{color:blue}}],
     weekday:[{x:['월','화','수','목','금','토','일'],y:data.weekday,type:'bar',marker:{color:blue}}],
     hourly:[{x:Array.from({length:24},(_,i)=>i),y:data.hours,type:'bar',marker:{color:blue}}],
-    heatmap:[{x:Array.from({length:24},(_,i)=>i),y:['월','화','수','목','금','토','일'],z:data.heatmap,type:'heatmap',colorscale:[[0,'#f0f4ff'],[1,blue]]}],
+    heatmap:[{x:Array.from({length:24},(_,i)=>String((i+5)%24).padStart(2,'0')),y:['월','화','수','목','금','토','일'],z:data.heatmap.map((row,w)=>Array.from({length:24},(_,i)=>data.heatmap[(w+((i+5)%24<5?1:0))%7][(i+5)%24])),type:'heatmap',colorscale:[[0,'#f0f4ff'],[1,blue]]}],
   };
-  const titles={daily:'날짜별 관측 게시량',weekday:'요일별 게시 분포',hourly:'시간대별 게시 분포',heatmap:'요일 × 시간'};
+  const titles={daily:'날짜별 관측 게시량',weekday:'요일별 게시 분포',hourly:'시간대별 게시 분포',heatmap:'요일 × 시간 · 05시–다음날 04시'};
   const images={};
   for(const name of onlyHeatmap?['heatmap']:Object.keys(charts)){
     const div=document.createElement('div');div.style.cssText='position:fixed;left:-20000px;top:0;width:1760px;height:660px';document.body.append(div);
     try{
-      await Plotly.newPlot(div,charts[name],{width:1760,height:660,title:{text:titles[name]+' · '+data.config.timezone},font:{family:'Nanum',size:18,color:'#43526b'},paper_bgcolor:'white',plot_bgcolor:'white',showlegend:false,margin:{t:90,b:70,l:90,r:60},yaxis:{autorange:name==='heatmap'?'reversed':true,rangemode:'tozero',gridcolor:'#edf1f7'}},{staticPlot:true});
+      await Plotly.newPlot(div,charts[name],{width:1760,height:660,title:{text:titles[name]+' · '+data.config.timezone},font:{family:'Nanum',size:18,color:'#43526b'},paper_bgcolor:'white',plot_bgcolor:'white',showlegend:false,margin:{t:90,b:70,l:90,r:60},xaxis:name==='heatmap'?{type:'category',categoryorder:'array',categoryarray:Array.from({length:24},(_,i)=>String((i+5)%24).padStart(2,'0'))}:{},yaxis:{autorange:name==='heatmap'?'reversed':true,rangemode:'tozero',gridcolor:'#edf1f7'}},{staticPlot:true});
       const svgUrl=await Plotly.toImage(div,{format:'svg',width:1760,height:660});
       let svg=decodeURIComponent(svgUrl.slice(svgUrl.indexOf(',')+1));
       svg=svg.replace(/(<svg\b[^>]*>)/,`$1<defs><style>@font-face{font-family:Nanum;src:url(data:font/ttf;base64,${font}) format('truetype')}</style></defs>`);

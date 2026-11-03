@@ -190,3 +190,5 @@ main{padding-top:26px;padding-bottom:36px}.page-heading{margin-bottom:20px}.page
  #gap-dialog-title{font-size:14px}
  #gap-chart{height:260px}
 }
+@media(max-width:760px){.gap-toolbar>div{flex-wrap:wrap}.gap-toolbar select{min-width:0}#gap-mode{flex-basis:100%}}
+.heat-axis-note{font-size:11px;color:#71819a;margin:10px 0 6px}

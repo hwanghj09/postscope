@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "collected_at": "2026-11-02T15:06:15.648958+00:00",
+  "collected_at": "2026-11-03T05:50:30.486380+00:00",
   "is_demo": false,
   "title": "유빈 아카이브",
   "timezone": "Asia/Seoul",
   "source": "api",
   "requested_start_utc": "2025-07-31T15:00:00+00:00",
-  "requested_end_utc": "2026-11-02T15:06:15.648958+00:00",
+  "requested_end_utc": "2026-11-03T05:50:30.486380+00:00",
   "complete": true,
   "senders": [
     {
@@ -281795,62 +281795,6 @@
       "album_key": "930444603429553389"
     },
     {
-      "sent_at_utc": "2026-11-02T14:55:56+00:00",
-      "edited_at_utc": "2026-11-02T14:56:34+00:00",
-      "expires_at_utc": null,
-      "content_kind": "document",
-      "document_mime": "application/pdf",
-      "is_forwarded": 0,
-      "is_service": 0,
-      "lifecycle": "active",
-      "message_id": "32434722957966662",
-      "sender_kind": "channel",
-      "sender_key": "channel:1045539489825345179",
-      "album_key": "1093131982170345297"
-    },
-    {
-      "sent_at_utc": "2026-11-02T14:56:01+00:00",
-      "edited_at_utc": null,
-      "expires_at_utc": null,
-      "content_kind": "document",
-      "document_mime": "application/pdf",
-      "is_forwarded": 0,
-      "is_service": 0,
-      "lifecycle": "active",
-      "message_id": "667628423324673794",
-      "sender_kind": "channel",
-      "sender_key": "channel:1045539489825345179",
-      "album_key": "1093131982170345297"
-    },
-    {
-      "sent_at_utc": "2026-11-02T14:56:01+00:00",
-      "edited_at_utc": null,
-      "expires_at_utc": null,
-      "content_kind": "document",
-      "document_mime": "application/pdf",
-      "is_forwarded": 0,
-      "is_service": 0,
-      "lifecycle": "active",
-      "message_id": "690304752881461656",
-      "sender_kind": "channel",
-      "sender_key": "channel:1045539489825345179",
-      "album_key": "1093131982170345297"
-    },
-    {
-      "sent_at_utc": "2026-11-02T14:56:02+00:00",
-      "edited_at_utc": null,
-      "expires_at_utc": null,
-      "content_kind": "document",
-      "document_mime": "application/pdf",
-      "is_forwarded": 0,
-      "is_service": 0,
-      "lifecycle": "active",
-      "message_id": "236807079209316295",
-      "sender_kind": "channel",
-      "sender_key": "channel:1045539489825345179",
-      "album_key": "1093131982170345297"
-    },
-    {
       "sent_at_utc": "2026-11-02T14:56:03+00:00",
       "edited_at_utc": null,
       "expires_at_utc": null,
@@ -282048,7 +281992,7 @@
     },
     {
       "sent_at_utc": "2026-11-02T14:56:22+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-02T15:07:58+00:00",
       "expires_at_utc": null,
       "content_kind": "document",
       "document_mime": "application/pdf",
@@ -282062,7 +282006,7 @@
     },
     {
       "sent_at_utc": "2026-11-02T14:56:23+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-02T22:55:31+00:00",
       "expires_at_utc": null,
       "content_kind": "photo",
       "document_mime": null,
@@ -282090,7 +282034,7 @@
     },
     {
       "sent_at_utc": "2026-11-02T14:56:28+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-02T22:55:33+00:00",
       "expires_at_utc": null,
       "content_kind": "text",
       "document_mime": null,
@@ -282202,7 +282146,7 @@
     },
     {
       "sent_at_utc": "2026-11-02T14:56:37+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-02T16:15:55+00:00",
       "expires_at_utc": null,
       "content_kind": "photo",
       "document_mime": null,
@@ -282230,7 +282174,7 @@
     },
     {
       "sent_at_utc": "2026-11-02T14:56:39+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-02T16:28:04+00:00",
       "expires_at_utc": null,
       "content_kind": "text",
       "document_mime": null,
@@ -282272,7 +282216,7 @@
     },
     {
       "sent_at_utc": "2026-11-02T14:56:46+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-02T15:17:24+00:00",
       "expires_at_utc": null,
       "content_kind": "photo",
       "document_mime": null,

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "collected_at": "2026-11-03T05:50:30.486380+00:00",
+  "collected_at": "2026-11-04T05:26:49.010702+00:00",
   "is_demo": false,
   "title": "유빈 아카이브",
   "timezone": "Asia/Seoul",
   "source": "api",
   "requested_start_utc": "2025-07-31T15:00:00+00:00",
-  "requested_end_utc": "2026-11-03T05:50:30.486380+00:00",
+  "requested_end_utc": "2026-11-04T05:26:49.010702+00:00",
   "complete": true,
   "senders": [
     {
@@ -37636,7 +37636,7 @@
     },
     {
       "sent_at_utc": "2025-08-11T15:25:52+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-04T04:59:08+00:00",
       "expires_at_utc": null,
       "content_kind": "document",
       "document_mime": "application/pdf",
@@ -79160,7 +79160,7 @@
     },
     {
       "sent_at_utc": "2025-08-11T15:53:08+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-03T06:43:20+00:00",
       "expires_at_utc": null,
       "content_kind": "document",
       "document_mime": "application/pdf",
@@ -281093,20 +281093,6 @@
       "sender_kind": "channel",
       "sender_key": "channel:1045539489825345179",
       "album_key": "306488793149561359"
-    },
-    {
-      "sent_at_utc": "2026-10-31T01:16:31+00:00",
-      "edited_at_utc": "2026-10-31T13:26:15+00:00",
-      "expires_at_utc": null,
-      "content_kind": "text",
-      "document_mime": null,
-      "is_forwarded": 0,
-      "is_service": 0,
-      "lifecycle": "active",
-      "message_id": "1034901541694032832",
-      "sender_kind": "channel",
-      "sender_key": "channel:1045539489825345179",
-      "album_key": null
     },
     {
       "sent_at_utc": "2026-11-02T07:44:59+00:00",

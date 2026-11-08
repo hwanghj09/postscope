@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "collected_at": "2026-11-07T05:12:12.224736+00:00",
+  "collected_at": "2026-11-08T05:07:53.853281+00:00",
   "is_demo": false,
   "title": "유빈 아카이브",
   "timezone": "Asia/Seoul",
   "source": "api",
   "requested_start_utc": "2025-07-31T15:00:00+00:00",
-  "requested_end_utc": "2026-11-07T05:12:12.224736+00:00",
+  "requested_end_utc": "2026-11-08T05:07:53.853281+00:00",
   "complete": true,
   "senders": [
     {
@@ -62640,7 +62640,7 @@
     },
     {
       "sent_at_utc": "2025-08-11T15:44:55+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-08T05:00:10+00:00",
       "expires_at_utc": null,
       "content_kind": "document",
       "document_mime": "application/pdf",
@@ -67274,7 +67274,7 @@
     },
     {
       "sent_at_utc": "2025-08-11T15:48:14+00:00",
-      "edited_at_utc": null,
+      "edited_at_utc": "2026-11-07T16:03:13+00:00",
       "expires_at_utc": null,
       "content_kind": "text",
       "document_mime": null,

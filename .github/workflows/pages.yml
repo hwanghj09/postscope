@@ -19,11 +19,12 @@ concurrency:
   group: github-pages
   cancel-in-progress: true
 
+# Playwright 1.56 requires a supported OS; pin Ubuntu to avoid runner-image migrations.
 jobs:
   collect:
     name: Update daily data
     if: github.event_name == 'schedule' || inputs.collect == true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: write
@@ -59,7 +60,7 @@ jobs:
     name: Build and test website
     needs: collect
     if: always() && (needs.collect.result == 'success' || needs.collect.result == 'skipped')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       PYTHONUTF8: '1'
@@ -92,7 +93,7 @@ jobs:
     name: Deploy to GitHub Pages
     needs: build
     if: always() && needs.build.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       pages: write

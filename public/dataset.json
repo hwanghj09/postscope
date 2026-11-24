@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "collected_at": "2026-11-23T06:30:07.019906+00:00",
+  "collected_at": "2026-11-24T08:59:21.671912+00:00",
   "is_demo": false,
   "title": "유빈 아카이브",
   "timezone": "Asia/Seoul",
   "source": "api",
   "requested_start_utc": "2025-07-31T15:00:00+00:00",
-  "requested_end_utc": "2026-11-23T06:30:07.019906+00:00",
+  "requested_end_utc": "2026-11-24T08:59:21.671912+00:00",
   "complete": true,
   "senders": [],
   "messages": []
